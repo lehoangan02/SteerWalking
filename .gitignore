@@ -128,3 +128,50 @@ InitTestScene*.unity*
 # Backup & temp meta files
 # ----------------------
 *.meta~
+# ----------------------
+# Python Bytecode
+# ----------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ----------------------
+# Virtual Environments (VITAL to ignore)
+# ----------------------
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ----------------------
+# Distribution / Packaging
+# ----------------------
+dist/
+build/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ----------------------
+# Jupyter Notebooks
+# ----------------------
+.ipynb_checkpoints
+
+# ----------------------
+# Environments & Secrets
+# ----------------------
+.env
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ----------------------
+# Unit test / Coverage reports
+# ----------------------
+htmlcov/
+.tox/
+.noseresults
+.pytest_cache/
