@@ -38,27 +38,26 @@ public class HandTrackingReceiver : MonoBehaviour
     }
 
     void Update()
-{
-    if (string.IsNullOrEmpty(lastReceivedPacket)) return;
-
-    string[] coords = lastReceivedPacket.Split(',');
-
-    // Move Ball 1 (First 3 values: x, y, z)
-    if (coords.Length >= 3)
     {
-        float x1 = (float.Parse(coords[0]) - 0.5f) * 15f; 
-        float y1 = (0.5f - float.Parse(coords[1])) * 10f; 
-        ball1.transform.position = new Vector3(x1, y1, 0);
-    }
+        if (string.IsNullOrEmpty(lastReceivedPacket)) return;
 
-    // Move Ball 2 (Next 3 values: x, y, z)
-    if (coords.Length >= 6)
-    {
-        float x2 = (float.Parse(coords[3]) - 0.5f) * 15f;
-        float y2 = (0.5f - float.Parse(coords[4])) * 10f;
-        ball2.transform.position = new Vector3(x2, y2, 0);
-    }
-}
+        string[] coords = lastReceivedPacket.Split(',');
+
+        // Move Ball 1 (First 3 values: x, y, z)
+        if (coords.Length >= 3)
+        {
+            float x1 = (float.Parse(coords[0]) - 0.5f) * 15f; 
+            float y1 = (0.5f - float.Parse(coords[1])) * 10f; 
+            ball1.transform.position = new Vector3(x1, y1, 0);
+        }
+
+        // Move Ball 2 (Next 3 values: x, y, z)
+        if (coords.Length >= 6)
+        {
+            float x2 = (float.Parse(coords[3]) - 0.5f) * 15f;
+            float y2 = (0.5f - float.Parse(coords[4])) * 10f;
+            ball2.transform.position = new Vector3(x2, y2, 0);
+        }
     }
 
     void OnApplicationQuit()
