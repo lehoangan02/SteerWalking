@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using TMPro;
 
 public class UDPRotaryEncoderReceiver : MonoBehaviour
 {
@@ -15,6 +16,8 @@ public class UDPRotaryEncoderReceiver : MonoBehaviour
     private int previousValue;
     [SerializeField]
     private int port = 5005;
+    [SerializeField]
+    private TextMeshProUGUI valueText;
 
     void Start()
     {
@@ -46,6 +49,7 @@ public class UDPRotaryEncoderReceiver : MonoBehaviour
         {
             previousValue = value;
             Debug.Log("Rotary Encoder Value: " + value);
+            valueText.text = "Value: " + value.ToString();
         }
         
     }
