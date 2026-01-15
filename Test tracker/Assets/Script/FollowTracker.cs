@@ -10,10 +10,11 @@ public class HandTrackingReceiver : MonoBehaviour
     UdpClient client;
     public int port = 5052;
     
-    public GameObject ball1;
-    public GameObject ball2;
+    public GameObject leftHandBall;  // Rename ball1 to this
+    public GameObject rightHandBall; // Rename ball2 to this
     
     private string lastReceivedPacket = "";
+    private bool isRunning = true;
 
     void Start()
     {
@@ -25,7 +26,7 @@ public class HandTrackingReceiver : MonoBehaviour
     private void ReceiveData()
     {
         client = new UdpClient(port);
-        while (true)
+        while (isRunning)
         {
             try
             {
@@ -42,27 +43,49 @@ public class HandTrackingReceiver : MonoBehaviour
         if (string.IsNullOrEmpty(lastReceivedPacket)) return;
 
         string[] coords = lastReceivedPacket.Split(',');
+        if (coords.Length < 6) return;
 
-        // Move Ball 1 (First 3 values: x, y, z)
-        if (coords.Length >= 3)
+        // Parse Coordinates
+        float lx = float.Parse(coords[0]);
+        float ly = float.Parse(coords[1]);
+        // coords[2] is lz, unused for 2D movement
+
+        float rx = float.Parse(coords[3]);
+        float ry = float.Parse(coords[4]);
+        // coords[5] is rz
+
+        // === LEFT HAND LOGIC ===
+        // If lx is 0, the hand is likely not detected
+        if (lx != 0 || ly != 0) 
         {
-            float x1 = (float.Parse(coords[0]) - 0.5f) * 15f; 
-            float y1 = (0.5f - float.Parse(coords[1])) * 10f; 
-            ball1.transform.position = new Vector3(x1, y1, 0);
+            leftHandBall.SetActive(true);
+            float x1 = (lx - 0.5f) * 15f; 
+            float y1 = (0.5f - ly) * 10f; 
+            leftHandBall.transform.position = new Vector3(x1, y1, 0);
+        }
+        else 
+        {
+            leftHandBall.SetActive(false);
         }
 
-        // Move Ball 2 (Next 3 values: x, y, z)
-        if (coords.Length >= 6)
+        // === RIGHT HAND LOGIC ===
+        if (rx != 0 || ry != 0)
         {
-            float x2 = (float.Parse(coords[3]) - 0.5f) * 15f;
-            float y2 = (0.5f - float.Parse(coords[4])) * 10f;
-            ball2.transform.position = new Vector3(x2, y2, 0);
+            rightHandBall.SetActive(true);
+            float x2 = (rx - 0.5f) * 15f;
+            float y2 = (0.5f - ry) * 10f;
+            rightHandBall.transform.position = new Vector3(x2, y2, 0);
+        }
+        else
+        {
+            rightHandBall.SetActive(false);
         }
     }
 
     void OnApplicationQuit()
     {
+        isRunning = false;
         if (receiveThread != null) receiveThread.Abort();
-        client.Close();
+        if (client != null) client.Close();
     }
 }
