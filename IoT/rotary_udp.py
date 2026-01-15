@@ -17,10 +17,12 @@ def send(data):
 
 def rotate():
     send({"type": "rotate", "value": rotor.steps})
+    print(f"Current Value: {rotor.steps}")
 
 def press():
     rotor.steps = 0
     send({"type": "button"})
+    print("Button Pressed!")
 
 rotor.when_rotated = rotate
 button.when_pressed = press
