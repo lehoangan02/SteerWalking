@@ -49,7 +49,7 @@ public class UDPRotaryEncoderReceiver : MonoBehaviour
         {
             previousValue = value;
             Debug.Log("Rotary Encoder Value: " + value);
-            valueText.text = "Value: " + value.ToString();
+            valueText.SetText("Value: " + value.ToString());
         }
         
     }
