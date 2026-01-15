@@ -12,6 +12,7 @@ public class UDPRotaryEncoderReceiver : MonoBehaviour
     private UdpClient udpClient;
     private Thread thread;
     private int value;
+    private int previousValue;
     [SerializeField]
     private int port = 5005;
 
@@ -23,6 +24,8 @@ public class UDPRotaryEncoderReceiver : MonoBehaviour
         thread = new Thread(Receive);
         thread.IsBackground = true;
         thread.Start();
+
+        previousValue = 0;
     }
     void Receive()
     {
@@ -39,7 +42,12 @@ public class UDPRotaryEncoderReceiver : MonoBehaviour
     }
     void Update()
     {
-        Debug.Log("Rotary Encoder Value: " + value);
+        if (value != previousValue)
+        {
+            previousValue = value;
+            Debug.Log("Rotary Encoder Value: " + value);
+        }
+        
     }
     void OnApplicationQuit()
     {
