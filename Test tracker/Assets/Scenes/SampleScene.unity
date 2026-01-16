@@ -135,6 +135,7 @@ GameObject:
   - component: {fileID: 127903468}
   - component: {fileID: 127903469}
   - component: {fileID: 127903470}
+  - component: {fileID: 127903471}
   m_Layer: 0
   m_Name: HandTrackerReciever
   m_TagString: Untagged
@@ -218,7 +219,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 127903465}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a825fdbb7e22b894eaf06866276850f6, type: 3}
   m_Name: 
@@ -230,6 +231,30 @@ MonoBehaviour:
   rightLegBall: {fileID: 696577618}
   visualScale: 3
   legSpacing: 0.4
+  virtualStrideLength: 1.6
+  maxSpeed: 8
+  friction: 5
+  enableLogging: 1
+  logInterval: 0.5
+--- !u!114 &127903471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 127903465}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 341d935d6d81ffb46b53b12661f51965, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  trackerPose:
+    actionPath: 
+    needsReinit: 0
+  leftFootSource: 3
+  rightFootSource: 4
+  targetToMove: {fileID: 0}
+  headCamera: {fileID: 0}
   virtualStrideLength: 1.6
   maxSpeed: 8
   friction: 5
@@ -707,8 +732,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   poseAction:
-    actionPath: /actions//in/Pose
-    needsReinit: 1
+    actionPath: /actions/default/in/Pose
+    needsReinit: 0
   inputSource: 0
   origin: {fileID: 0}
   onTransformUpdated:
@@ -772,8 +797,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   poseAction:
-    actionPath: /actions//in/Pose
-    needsReinit: 1
+    actionPath: /actions/default/in/Pose
+    needsReinit: 0
   inputSource: 0
   origin: {fileID: 0}
   onTransformUpdated:
