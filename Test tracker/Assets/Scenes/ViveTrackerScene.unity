@@ -153,8 +153,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   port: 5068
   statusText: {fileID: 1764938509}
-  trackerSerials: []
-  trackerObjects: []
 --- !u!4 &13810914
 Transform:
   m_ObjectHideFlags: 0
@@ -348,8 +346,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 16
+  m_fontSizeBase: 16
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
