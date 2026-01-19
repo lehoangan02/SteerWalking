@@ -4,8 +4,15 @@ using UnityEngine;
 public class PedalAnimator : MonoBehaviour
 {
     [Header("Connections")]
-    [Tooltip("Drag your X Bot object here (the one with PedalReceiver)")]
-    public PedalReceiver networkSource; 
+    [Tooltip("Drag the object with UDPViveTrackerReceiver here")]
+    public UDPViveTrackerReceiver networkSource; 
+
+    [Header("Tracker Setup")]
+    [Tooltip("Enter the Serial Number for the Left Foot (e.g. LHR-12345678)")]
+    public string leftFootSerial;
+    
+    [Tooltip("Enter the Serial Number for the Right Foot (e.g. LHR-87654321)")]
+    public string rightFootSerial;
 
     [Header("Setup")]
     public string stateName = "Walking"; 
@@ -28,19 +35,24 @@ public class PedalAnimator : MonoBehaviour
         if(headCamera == null) headCamera = Camera.main.transform;
         animator.speed = 0; 
 
-        if (networkSource == null) networkSource = GetComponent<PedalReceiver>();
+        // Auto-find if attached to the same object
+        if (networkSource == null) networkSource = GetComponent<UDPViveTrackerReceiver>();
     }
 
     void Update()
     {
-        if (networkSource == null || !networkSource.hasData) return;
+        // Safety: Do we have the receiver?
+        if (networkSource == null) return;
 
-        // 1. Get 3D Positions (X, Y, Z)
-        Vector3 left = networkSource.leftPos;
-        Vector3 right = networkSource.rightPos;
+        // 1. Get 3D Positions using the Serial Numbers
+        // The receiver handles the logic of finding the specific tracker
+        Vector3 left = networkSource.GetTrackerPosition(leftFootSerial);
+        Vector3 right = networkSource.GetTrackerPosition(rightFootSerial);
+
+        // Safety: If both are zero, data might not be ready or serials are wrong
+        if (left == Vector3.zero && right == Vector3.zero) return;
 
         // 2. Calculate the "Crank Vector" in 3D
-        // This is the line connecting your left foot to your right foot
         Vector3 footDifference = right - left;
 
         // 3. Project this 3D vector onto the Pedaling Plane
@@ -50,14 +62,13 @@ public class PedalAnimator : MonoBehaviour
         forwardDir.Normalize();
 
         // Calculate 3D components:
-        // 'forwardOffset' = How far forward one foot is vs the other (Z-depth relative to player)
+        // 'forwardOffset' = How far forward one foot is vs the other (Z-depth)
         float forwardOffset = Vector3.Dot(footDifference, forwardDir);
         
         // 'heightOffset' = How high one foot is vs the other (Y-height)
         float heightOffset = footDifference.y;
 
         // 4. Calculate Angle from these 3D offsets
-        // Atan2(y, x) computes the angle of the vector
         float rawAngleDegrees = Mathf.Atan2(heightOffset, forwardOffset) * Mathf.Rad2Deg;
         
         if (rawAngleDegrees < 0) rawAngleDegrees += 360f;
