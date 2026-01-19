@@ -6,14 +6,7 @@ public class PedalAnimator : MonoBehaviour
     [Header("Connections")]
     [Tooltip("Drag the object with UDPViveTrackerReceiver here")]
     public UDPViveTrackerReceiver networkSource; 
-
-    [Header("Tracker Setup")]
-    [Tooltip("Enter the Serial Number for the Left Foot (e.g. LHR-12345678)")]
-    public string leftFootSerial;
     
-    [Tooltip("Enter the Serial Number for the Right Foot (e.g. LHR-87654321)")]
-    public string rightFootSerial;
-
     [Header("Setup")]
     public string stateName = "Walking"; 
     public Transform targetToMove; 
@@ -22,12 +15,12 @@ public class PedalAnimator : MonoBehaviour
     [Header("Tuning")]
     public float distancePerCycle = 1.5f; 
     public float gearRatio = 1.0f;
-    public bool reverseAnimation = false;
-
+    
     // Internal Vars
     private Animator animator;
     private float currentAngle = 0f;
     private float lastAngle = 0f;
+    private float accumulatedDistance = 0f; // Stores total progress
 
     void Start()
     {
@@ -35,7 +28,6 @@ public class PedalAnimator : MonoBehaviour
         if(headCamera == null) headCamera = Camera.main.transform;
         animator.speed = 0; 
 
-        // Auto-find if attached to the same object
         if (networkSource == null) networkSource = GetComponent<UDPViveTrackerReceiver>();
     }
 
@@ -44,53 +36,54 @@ public class PedalAnimator : MonoBehaviour
         // Safety: Do we have the receiver?
         if (networkSource == null) return;
 
-        // 1. Get 3D Positions using the Serial Numbers
-        // The receiver handles the logic of finding the specific tracker
-        Vector3 left = networkSource.GetTrackerPosition(leftFootSerial);
-        Vector3 right = networkSource.GetTrackerPosition(rightFootSerial);
+        // 1. Get 3D Positions using the Index functions you requested
+        Vector3 left = networkSource.GetTracker1Position();
+        Vector3 right = networkSource.GetTracker2Position();
 
-        // Safety: If both are zero, data might not be ready or serials are wrong
+        // Safety: If both are zero, data might not be ready
         if (left == Vector3.zero && right == Vector3.zero) return;
 
         // 2. Calculate the "Crank Vector" in 3D
         Vector3 footDifference = right - left;
 
         // 3. Project this 3D vector onto the Pedaling Plane
-        // We define "Forward" as where the camera is looking (flattened on ground)
         Vector3 forwardDir = headCamera.forward;
         forwardDir.y = 0;
         forwardDir.Normalize();
 
-        // Calculate 3D components:
-        // 'forwardOffset' = How far forward one foot is vs the other (Z-depth)
         float forwardOffset = Vector3.Dot(footDifference, forwardDir);
-        
-        // 'heightOffset' = How high one foot is vs the other (Y-height)
         float heightOffset = footDifference.y;
 
-        // 4. Calculate Angle from these 3D offsets
+        // 4. Calculate Angle
         float rawAngleDegrees = Mathf.Atan2(heightOffset, forwardOffset) * Mathf.Rad2Deg;
         
-        if (rawAngleDegrees < 0) rawAngleDegrees += 360f;
-
-        // 5. Smooth & Play Animation
+        // 5. Smooth Angle
         currentAngle = Mathf.LerpAngle(currentAngle, rawAngleDegrees, Time.deltaTime * 15f);
 
-        float adjustedAngle = currentAngle / gearRatio;
-        float normalizedTime = Mathf.Repeat(adjustedAngle, 360f) / 360f;
-
-        if (reverseAnimation) normalizedTime = 1f - normalizedTime;
-        animator.Play(stateName, 0, normalizedTime);
-
-        // 6. Move Character
+        // 6. CALCULATE MOVEMENT (Always Forward Logic)
         float delta = Mathf.DeltaAngle(lastAngle, currentAngle);
-        if (Mathf.Abs(delta) > 0.01f)
+        
+        // Take Absolute Value so backward pedaling still adds forward progress
+        float positiveMove = Mathf.Abs(delta);
+
+        if (positiveMove > 0.05f)
         {
-            float moveAmount = (Mathf.Abs(delta) / 360f) * distancePerCycle;
-            
+            // Add to total distance (Animation driver)
+            accumulatedDistance += positiveMove;
+
+            // Move Character in World Space
             if (targetToMove != null && forwardDir != Vector3.zero)
-                targetToMove.Translate(forwardDir * moveAmount, Space.World);
+            {
+                float moveMeters = (positiveMove / 360f) * distancePerCycle;
+                targetToMove.Translate(forwardDir * moveMeters, Space.World);
+            }
         }
+
+        // 7. Update Animation
+        // Use accumulatedDistance so the animation never rewinds
+        float normalizedTime = (accumulatedDistance / 360f) / gearRatio;
+        animator.Play(stateName, 0, normalizedTime % 1.0f);
+
         lastAngle = currentAngle;
     }
 }
