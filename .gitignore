@@ -175,3 +175,4 @@ htmlcov/
 .tox/
 .noseresults
 .pytest_cache/
+/myenv
