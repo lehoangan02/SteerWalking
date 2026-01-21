@@ -1,8 +1,39 @@
+from sympy import atan2, deg
 from sympy import Point3D, Matrix, cos, sin, rad
 from sympy.geometry import Plane, Circle
 
 def make_point(x, y, z):
     return Point3D(x, y, z)
+
+def make_midpoint(p1, p2):
+    return Point3D(
+        (p1.x + p2.x) / 2,
+        (p1.y + p2.y) / 2,
+        (p1.z + p2.z) / 2
+    )
+
+def angle(prev, after, origin):
+    v1 = Matrix([
+        prev.x - origin.x,
+        prev.y - origin.y,
+        prev.z - origin.z
+    ])
+
+    v2 = Matrix([
+        after.x - origin.x,
+        after.y - origin.y,
+        after.z - origin.z
+    ])
+
+    plane = Plane(origin, prev, after)
+    n = Matrix(plane.normal_vector)
+
+    cross = v1.cross(v2)
+    dot = v1.dot(v2)
+
+    signed = n.dot(cross)
+
+    return deg(atan2(signed, dot))
 
 def is_three_point_line(p1, p2, p3):
     return Point3D.are_collinear(p1, p2, p3)
@@ -95,3 +126,9 @@ if __name__ == "__main__":
     degree = 90
     rotated_point = rotate_around_ground_normal(p4, origin, degree)
     print("Rotated point:", rotated_point)
+
+    p5 = make_point(1, 0, 0)
+    p6 = make_point(0, 0, 1)
+    origin = make_point(0, 0, 0)
+    angle56 = angle(p5, p6, origin)
+    print("Angle between p5 and p6 around origin:", angle56)
