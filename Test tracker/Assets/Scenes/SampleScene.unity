@@ -349,13 +349,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa501fc50a3340641a88cad23320fb3b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  port: 5052
+  networkSource: {fileID: 0}
   stateName: Walking
   targetToMove: {fileID: 264783050}
   headCamera: {fileID: 2130925647}
   distancePerCycle: 1.5
   gearRatio: 1
-  reverseAnimation: 0
 --- !u!1 &705551172
 GameObject:
   m_ObjectHideFlags: 0
@@ -514,13 +513,58 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa501fc50a3340641a88cad23320fb3b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  port: 5052
+  networkSource: {fileID: 0}
   stateName: Walking
   targetToMove: {fileID: 264783050}
   headCamera: {fileID: 2130925647}
   distancePerCycle: 1.5
   gearRatio: 0.8
-  reverseAnimation: 0
+--- !u!1 &1896200888
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1896200890}
+  - component: {fileID: 1896200889}
+  m_Layer: 0
+  m_Name: UDP_Reciever
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1896200889
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1896200888}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06cd693ee856b88478b0598dc656015d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  port: 5068
+  statusText: {fileID: 0}
+--- !u!4 &1896200890
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1896200888}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.348974, y: 1.7357447, z: 1.9444758}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1931415714
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -697,4 +741,5 @@ SceneRoots:
   m_Roots:
   - {fileID: 705551176}
   - {fileID: 244969306}
+  - {fileID: 1896200890}
   - {fileID: 264783050}
