@@ -4,6 +4,7 @@ import math
 import socket
 import json
 from gpiozero import RotaryEncoder, Button
+from anmath import *
 
 # ===================== UDP =====================
 
@@ -63,7 +64,6 @@ try:
         button_pressed = button.is_pressed
 
         rudder_degree = encoder_steps * 24 # KY040 has 30 detents per revolution, 2 detents per step
-        from anmath import *
         tracker1X = trackers[0]["pos"][0]
         tracker1Y = trackers[0]["pos"][1]
         tracker1Z = trackers[0]["pos"][2]
@@ -111,7 +111,7 @@ try:
                 json.dumps(packet).encode("utf-8"),
                 (UDP_IP, UDP_PORT)
             )
-        ++frame_index
+        frame_index += 1
         previous_tracker1_position = tracker1_rotated_pos
         time.sleep(0.02)  # 50 Hz
         
