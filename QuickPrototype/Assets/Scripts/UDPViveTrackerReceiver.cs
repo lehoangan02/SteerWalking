@@ -14,6 +14,7 @@ public class TrackerPayload
     public string type;
     public double time;
     public TrackerData[] trackers;
+    public float angular_velocity; // Added field for angular velocity
 }
 
 [Serializable]
@@ -110,6 +111,7 @@ public class UDPViveTrackerReceiver : MonoBehaviour
         sb.AppendLine("=== Vive Tracker UDP Data ===");
         sb.AppendLine($"Type: {payload.type}");
         sb.AppendLine($"Time: {payload.time}");
+        sb.AppendLine($"Angular Velocity: {payload.angular_velocity:F2} deg/sec"); // Display angular velocity
         sb.AppendLine($"Trackers: {payload.trackers.Length}");
         sb.AppendLine("");
 
@@ -158,6 +160,11 @@ public class UDPViveTrackerReceiver : MonoBehaviour
         return latestPayload != null ? latestPayload.time : 0;
     }
 
+    public float GetAngularVelocity() // New function to get angular velocity
+    {
+        return latestPayload != null ? latestPayload.angular_velocity : 0f;
+    }
+
     public TrackerData[] GetTrackers()
     {
         return latestPayload?.trackers;
@@ -200,43 +207,6 @@ public class UDPViveTrackerReceiver : MonoBehaviour
         var t = GetTrackerBySerial(serial);
         return t != null && t.valid;
     }
-
-    public Vector3 GetTracker1Position()
-    {
-        var t = GetTrackerByIndex(0);
-        if (t?.position == null) return Vector3.zero;
-        return new Vector3(t.position[0], t.position[1], t.position[2]);
-    }
-
-    public float GetTracker1PosX() => GetTracker1Position().x;
-    public float GetTracker1PosY() => GetTracker1Position().y;
-    public float GetTracker1PosZ() => GetTracker1Position().z;
-
-    public Quaternion GetTracker1Rotation()
-    {
-        var t = GetTrackerByIndex(0);
-        if (t?.rotation == null) return Quaternion.identity;
-        return new Quaternion(t.rotation[0], t.rotation[1], t.rotation[2], t.rotation[3]);
-    }
-
-    public Vector3 GetTracker2Position()
-    {
-        var t = GetTrackerByIndex(1);
-        if (t?.position == null) return Vector3.zero;
-        return new Vector3(t.position[0], t.position[1], t.position[2]);
-    }
-
-    public float GetTracker2PosX() => GetTracker2Position().x;
-    public float GetTracker2PosY() => GetTracker2Position().y;
-    public float GetTracker2PosZ() => GetTracker2Position().z;
-
-    public Quaternion GetTracker2Rotation()
-    {
-        var t = GetTrackerByIndex(1);
-        if (t?.rotation == null) return Quaternion.identity;
-        return new Quaternion(t.rotation[0], t.rotation[1], t.rotation[2], t.rotation[3]);
-    }
-
 
     #endregion
 }

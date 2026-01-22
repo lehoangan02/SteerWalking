@@ -633,6 +633,27 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 111fd4693009eb948b306c2938175b85, type: 3}
   m_PrefabInstance: {fileID: 1060595198}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &700007448
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700007443}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2beb1cf40c274e545bc7d579e83d5e44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UDPAnimationController
+  udpReceiver: {fileID: 1504642390}
+  playerMovement: {fileID: 700007446}
+  walkingRadius: 2
+  deadzone: 1
+  smoothing: 0.1
+  movementSpeedScale: 1
+  controlAnimationSpeed: 1
+  animationSpeedScale: 0.5
+  applyRotationToTransform: 0
 --- !u!4 &957434469 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6909339406992702979, guid: f456f8b910b4d4544b18a3c58be95dee, type: 3}
@@ -656,7 +677,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 111fd4693009eb948b306c2938175b85, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -19.684576
+      value: -19.43
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 111fd4693009eb948b306c2938175b85, type: 3}
       propertyPath: m_LocalRotation.w
@@ -703,6 +724,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 111fd4693009eb948b306c2938175b85, type: 3}
       insertIndex: -1
       addedObject: {fileID: 700007446}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 111fd4693009eb948b306c2938175b85, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 700007448}
   m_SourcePrefab: {fileID: 100100000, guid: 111fd4693009eb948b306c2938175b85, type: 3}
 --- !u!1 &1160143382
 GameObject:
@@ -903,7 +927,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1504642389}
-  - component: {fileID: 1504642388}
+  - component: {fileID: 1504642390}
   m_Layer: 0
   m_Name: UDPController
   m_TagString: Untagged
@@ -911,20 +935,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1504642388
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1504642387}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c59073f45a45ded4389614d4c768dcf1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UDPViveTrackerReceiver
-  port: 5068
-  statusText: {fileID: 0}
 --- !u!4 &1504642389
 Transform:
   m_ObjectHideFlags: 0
@@ -940,6 +950,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1504642390
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1504642387}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfeaabcadb38c6641856ef466138d710, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UDP_SimulatedReceiver
+  port: 9000
+  radius: 2
+  height: 1
+  statusText: {fileID: 0}
 --- !u!1 &1746004300
 GameObject:
   m_ObjectHideFlags: 0
@@ -1305,5 +1331,5 @@ SceneRoots:
   - {fileID: 229742239}
   - {fileID: 1060595198}
   - {fileID: 4293193346205394295}
-  - {fileID: 1504642389}
   - {fileID: 2084645796}
+  - {fileID: 1504642389}

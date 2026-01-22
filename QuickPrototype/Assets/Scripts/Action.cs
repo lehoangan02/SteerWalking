@@ -6,7 +6,7 @@ public class PlayerMovement : MonoBehaviour
     public float speed = 2f;
 
     [Header("Manual Velocity (LOCAL space)")]
-    public Vector3 velocity;
+    public Vector3 velocity = Vector3.zero;
 
     [Header("Stair Settings")]
     public float stepHeight = 0.4f;
