@@ -35,6 +35,7 @@ base_O2 = np.array([0.0, 0.0, -1.0])
 rotation_y = 0.0
 circle_angle = 0.0
 STEP = 0.02
+RADIUS = 1.0
 
 def rot_y(theta):
     c = np.cos(theta)
@@ -66,7 +67,7 @@ coord_text = ax.text2D(
     family="monospace"
 )
 
-theta = np.linspace(0, 2*np.pi, 100)
+theta = np.linspace(0, 2*np.pi, 120)
 unit_circle = np.stack([
     np.cos(theta),
     np.sin(theta),
@@ -78,25 +79,32 @@ def update(frame):
 
     R = rot_y(rotation_y)
 
+    O = np.array([0.0, 0.0, 0.0])
     O1 = R @ base_O1
     O2 = R @ base_O2
 
     circle_angle += 0.05
 
-    local_pos = np.array([
+    a1_local = RADIUS * np.array([
         np.cos(circle_angle),
         np.sin(circle_angle),
         0.0
     ])
 
-    A1 = O1 + R @ local_pos
-    A2 = O2 + R @ local_pos
+    a2_local = RADIUS * np.array([
+        np.cos(circle_angle + np.pi),
+        np.sin(circle_angle + np.pi),
+        0.0
+    ])
 
-    circle1 = O1 + (unit_circle @ R.T)
-    circle2 = O2 + (unit_circle @ R.T)
+    A1 = O1 + R @ a1_local
+    A2 = O2 + R @ a2_local
+
+    circle1 = O1 + (unit_circle @ R.T) * RADIUS
+    circle2 = O2 + (unit_circle @ R.T) * RADIUS
 
     for dot, p in [
-        (O_dot,  np.array([0.0, 0.0, 0.0])),
+        (O_dot,  O),
         (O1_dot, O1),
         (O2_dot, O2),
         (A1_dot, A1),
@@ -123,6 +131,7 @@ def update(frame):
     label_at_point(ax, A2_label, A2)
 
     coord_text.set_text(
+        f"O  = ({O[0]: .2f}, {O[1]: .2f}, {O[2]: .2f})\n"
         f"O1 = ({O1[0]: .2f}, {O1[1]: .2f}, {O1[2]: .2f})\n"
         f"O2 = ({O2[0]: .2f}, {O2[1]: .2f}, {O2[2]: .2f})\n"
         f"A1 = ({A1[0]: .2f}, {A1[1]: .2f}, {A1[2]: .2f})\n"
@@ -138,9 +147,9 @@ def update(frame):
 def on_key(event):
     global rotation_y
     if event.key == 'left':
-        rotation_y += STEP
-    if event.key == 'right':
         rotation_y -= STEP
+    if event.key == 'right':
+        rotation_y += STEP
 
 fig.canvas.mpl_connect('key_press_event', on_key)
 
