@@ -4,73 +4,95 @@ public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement")]
     public float speed = 2f;
-    public float smoothing = 10f; // Higher = Snappier, Lower = Floaty
+    [Tooltip("How fast the BODY physically moves up/down the step. Lower = Heavier.")]
+    public float climbSmoothing = 5f; 
 
     [Header("Manual Velocity (LOCAL space)")]
     public Vector3 velocity = Vector3.zero;
 
     [Header("Stair Settings")]
     public float stepHeight = 0.4f;
-    public float stepCheckDistance = 0.5f; // Increased slightly to detect steps earlier
+    public float stepCheckDistance = 0.5f; 
     public LayerMask groundMask;
 
     // Internal smoothing vars
-    private Vector3 currentVelocity;
-    private float smoothYOffset = 0f; // Stores the height we need to climb
+    private float smoothYOffset = 0f;
 
     void Update()
     {
-        // 1. Calculate base movement
         Vector3 targetMove = transform.TransformDirection(velocity) * speed;
 
-        // 2. CHECK FOR STEPS
-        // We do this BEFORE moving to prevent hitting the wall
+        // 1. Check for climbing UP
         CheckStepUp(targetMove.normalized);
 
-        // 3. APPLY SMOOTH STEPPING
-        // If we found a step, smoothYOffset is > 0. We move it towards 0 as we apply it to the transform.
-        if (smoothYOffset > 0.001f)
+        // 2. Check for stepping DOWN (Gravity/Snap)
+        // Only check down if we aren't currently climbing up
+        if (smoothYOffset <= 0.01f) 
         {
-            float climbAmount = smoothYOffset * Time.deltaTime * smoothing;
-            transform.position += Vector3.up * climbAmount;
-            smoothYOffset -= climbAmount;
+            CheckStepDown();
         }
 
-        // 4. PROJECT MOVE ON GROUND (Slope Handling)
+        // --- SMOOTH CLIMBING/DESCENDING LOGIC ---
+        // We act on the Y-offset separately from the forward movement
+        // Using Mathf.Abs allows us to handle both Up (+) and Down (-) offsets
+        if (Mathf.Abs(smoothYOffset) > 0.001f)
+        {
+            // Move the body gradually towards the target height
+            float moveStep = smoothYOffset * Time.deltaTime * climbSmoothing;
+            
+            // Prevent overshooting
+            if (Mathf.Abs(moveStep) > Mathf.Abs(smoothYOffset)) moveStep = smoothYOffset;
+
+            transform.position += Vector3.up * moveStep;
+            smoothYOffset -= moveStep;
+        }
+
+        // Project movement on slopes
         Ray ray = new Ray(transform.position + Vector3.up * 0.2f, Vector3.down);
-        if (Physics.Raycast(ray, out RaycastHit hit, 1.5f, groundMask))
+        if (Physics.Raycast(ray, out RaycastHit hit, 2.0f, groundMask)) // Increased ray length slightly
         {
             targetMove = Vector3.ProjectOnPlane(targetMove, hit.normal);
         }
 
-        // 5. MOVE
         transform.position += targetMove * Time.deltaTime;
     }
 
     void CheckStepUp(Vector3 moveDir)
     {
-        if (moveDir.magnitude < 0.01f) return;
-        
-        // Don't check if we are already climbing a step
-        if (smoothYOffset > 0.05f) return;
+        if (moveDir.magnitude < 0.01f || smoothYOffset > 0.05f) return;
 
-        // Lower ray (Feet level)
+        // Feet Ray
         Ray lowerRay = new Ray(transform.position + Vector3.up * 0.1f, moveDir);
-
-        // Upper ray (Knee level / Step Height)
+        // Knee Ray
         Ray upperRay = new Ray(transform.position + Vector3.up * (stepHeight + 0.1f), moveDir);
 
-        // Debug.DrawRay(lowerRay.origin, lowerRay.direction * stepCheckDistance, Color.red);
-        // Debug.DrawRay(upperRay.origin, upperRay.direction * stepCheckDistance, Color.green);
-
-        // If feet are blocked...
         if (Physics.Raycast(lowerRay, stepCheckDistance, groundMask))
         {
-            // ...but knees are free (meaning it's a step, not a wall)
             if (!Physics.Raycast(upperRay, stepCheckDistance + 0.1f, groundMask))
             {
-                // ADD to the smooth offset instead of teleporting
                 smoothYOffset += stepHeight;
+            }
+        }
+    }
+
+    void CheckStepDown()
+    {
+        // Cast a ray strictly down from the center to find the ground
+        Ray downRay = new Ray(transform.position + Vector3.up * 0.1f, Vector3.down);
+        
+        if (Physics.Raycast(downRay, out RaycastHit hit, stepHeight + 0.5f, groundMask))
+        {
+            // "hit.distance" starts at 0.1f (our offset). 
+            // If the distance is significantly larger than 0.1f, we are floating.
+            float distanceToGround = hit.distance - 0.1f;
+
+            // If we are floating above ground (falling/stepping down)
+            // But within the range of a "step" (not a cliff)
+            if (distanceToGround > 0.05f && distanceToGround <= stepHeight * 1.2f)
+            {
+                // We set a negative offset. The Update loop will smooth this negative value back to 0,
+                // effectively lowering the transform.position.
+                smoothYOffset = -distanceToGround;
             }
         }
     }

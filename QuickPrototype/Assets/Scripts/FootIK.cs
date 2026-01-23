@@ -1,81 +1,118 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Animator))]
-public class FootPlacementIK : MonoBehaviour
+public class StairClimberIK : MonoBehaviour
 {
-    [Header("Settings")]
+    [Header("Ground Config")]
     public LayerMask groundLayer;
-    [Range(0, 1)] public float distanceToGround = 0.1f;
-    public float raycastDistance = 1.5f;
-    public float ikSpeed = 20f; // Controls how fast feet react (Smoothness)
+    public float footOffset = 0.14f;
+
+    [Header("Stair Stepping")]
+    [Tooltip("How far forward from the HIPS to check for a step.")]
+    public float bodyLookAhead = 0.6f; 
+    
+    [Tooltip("How high to lift the foot.")]
+    public float stepLiftHeight = 0.35f;
+    
+    [Tooltip("Smoothing speed.")]
+    public float ikLerpSpeed = 15f;
+
+    [Header("Wall Detection")]
+    [Tooltip("Detects the vertical step riser to prevent toe stubbing.")]
+    public float toeRayLength = 0.4f;
 
     private Animator animator;
-    
-    // Store current IK positions to smooth them
     private Vector3 lFootPos, rFootPos;
     private Quaternion lFootRot, rFootRot;
-    private float lWeight, rWeight;
 
     void Start()
     {
         animator = GetComponent<Animator>();
-        // Initialize positions to avoid first-frame snap
-        lFootPos = transform.position;
-        rFootPos = transform.position;
-        lFootRot = transform.rotation;
-        rFootRot = transform.rotation;
+        lFootPos = rFootPos = transform.position;
+        lFootRot = rFootRot = transform.rotation;
     }
 
     void OnAnimatorIK(int layerIndex)
     {
         if (!animator) return;
 
-        // Define weights
         animator.SetIKPositionWeight(AvatarIKGoal.LeftFoot, 1);
         animator.SetIKRotationWeight(AvatarIKGoal.LeftFoot, 1);
         animator.SetIKPositionWeight(AvatarIKGoal.RightFoot, 1);
         animator.SetIKRotationWeight(AvatarIKGoal.RightFoot, 1);
 
-        // Process Feet
-        MoveFootSmoothed(AvatarIKGoal.LeftFoot, ref lFootPos, ref lFootRot);
-        MoveFootSmoothed(AvatarIKGoal.RightFoot, ref rFootPos, ref rFootRot);
+        HandleFoot(AvatarIKGoal.LeftFoot, ref lFootPos, ref lFootRot, -0.15f);
+        HandleFoot(AvatarIKGoal.RightFoot, ref rFootPos, ref rFootRot, 0.15f);
     }
 
-    void MoveFootSmoothed(AvatarIKGoal foot, ref Vector3 currentPos, ref Quaternion currentRot)
+    void HandleFoot(AvatarIKGoal goal, ref Vector3 currentPos, ref Quaternion currentRot, float sideOffset)
     {
-        // 1. Where does the animation WANT the foot?
-        Vector3 targetPos = animator.GetIKPosition(foot);
-        Quaternion targetRot = animator.GetIKRotation(foot);
+        Vector3 animPos = animator.GetIKPosition(goal);
+        Quaternion animRot = animator.GetIKRotation(goal);
 
-        // 2. Check for ground/stairs
-        RaycastHit hit;
-        // Start ray slightly above the animation target
-        Vector3 rayStart = targetPos + Vector3.up * 0.5f;
+        Vector3 targetPos = animPos;
+        Quaternion targetRot = animRot;
 
-        if (Physics.Raycast(rayStart, Vector3.down, out hit, raycastDistance, groundLayer))
+        // --- PREDICTION RAYS ---
+        Vector3 hipPos = transform.position + (transform.right * sideOffset);
+        Vector3 forwardProbeOrigin = hipPos + Vector3.up * 0.5f; 
+        Vector3 forwardProbe = forwardProbeOrigin + (transform.forward * bodyLookAhead);
+
+        RaycastHit hitNow, hitFuture, hitWall;
+        
+        bool groundFound = Physics.Raycast(animPos + Vector3.up * 0.5f, Vector3.down, out hitNow, 2.0f, groundLayer); // Increased depth check
+        bool futureFound = Physics.Raycast(forwardProbe, Vector3.down, out hitFuture, 2.5f, groundLayer); // Deeper check for stairs down
+
+        bool wallFound = Physics.Raycast(animPos + Vector3.up * 0.1f, transform.forward, out hitWall, toeRayLength, groundLayer);
+
+        if (groundFound)
         {
-            // Ground Target
-            Vector3 groundPos = hit.point;
-            groundPos.y += distanceToGround;
+            // Default: stick to current ground
+            targetPos = hitNow.point;
+            targetPos.y += footOffset;
+            
+            // Slope rotation
+            Vector3 fwd = animRot * Vector3.forward;
+            targetRot = Quaternion.LookRotation(Vector3.ProjectOnPlane(fwd, hitNow.normal), hitNow.normal);
 
-            // Slope Rotation
-            Vector3 forward = targetRot * Vector3.forward;
-            Quaternion groundRot = Quaternion.LookRotation(Vector3.ProjectOnPlane(forward, hit.normal), hit.normal);
+            // --- STAIR LOGIC (UP & DOWN) ---
+            float liftAmount = 0f;
 
-            // 3. INTERPOLATE (Smooth)
-            // Instead of setting it instantly, we Lerp towards the hit point
-            currentPos = Vector3.Lerp(currentPos, groundPos, Time.deltaTime * ikSpeed);
-            currentRot = Quaternion.Lerp(currentRot, groundRot, Time.deltaTime * ikSpeed);
+            // 1. Step UP: Ground ahead is higher
+            if (futureFound && hitFuture.point.y > hitNow.point.y + 0.1f)
+            {
+                liftAmount = stepLiftHeight;
+            }
+            // 2. Step DOWN: Ground ahead is LOWER
+            else if (futureFound && hitFuture.point.y < hitNow.point.y - 0.1f)
+            {
+                // We found a drop ahead. 
+                // We still apply lift so the foot doesn't clip the edge of the current step 
+                // as it moves towards the lower step.
+                liftAmount = stepLiftHeight * 0.8f; // Slightly less lift for going down often looks better
+            }
+            // 3. Toe Stub Fix
+            else if (wallFound && hitWall.normal.y < 0.1f) 
+            {
+                liftAmount = stepLiftHeight;
+            }
+
+            // Apply the Arc
+            if (liftAmount > 0)
+            {
+                // Distance to the future target (ignoring height differences)
+                float dist = Vector3.Distance(new Vector3(animPos.x, 0, animPos.z), new Vector3(hitFuture.point.x, 0, hitFuture.point.z));
+                float arc = Mathf.Clamp01(1.5f - dist); 
+                
+                targetPos.y += liftAmount * arc;
+                targetPos += transform.forward * 0.1f * arc;
+            }
         }
-        else
-        {
-            // If no ground found, revert to animation position smoothly
-            currentPos = Vector3.Lerp(currentPos, targetPos, Time.deltaTime * ikSpeed);
-            currentRot = Quaternion.Lerp(currentRot, targetRot, Time.deltaTime * ikSpeed);
-        }
 
-        // 4. Apply Final
-        animator.SetIKPosition(foot, currentPos);
-        animator.SetIKRotation(foot, currentRot);
+        currentPos = Vector3.Lerp(currentPos, targetPos, Time.deltaTime * ikLerpSpeed);
+        currentRot = Quaternion.Lerp(currentRot, targetRot, Time.deltaTime * ikLerpSpeed);
+
+        animator.SetIKPosition(goal, currentPos);
+        animator.SetIKRotation(goal, currentRot);
     }
 }
