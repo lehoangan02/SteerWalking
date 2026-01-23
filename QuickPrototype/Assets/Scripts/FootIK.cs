@@ -9,7 +9,7 @@ public class StairClimberIK : MonoBehaviour
 
     [Header("Stair Stepping")]
     [Tooltip("How far forward from the HIPS to check for a step.")]
-    public float bodyLookAhead = 0.6f; // Increased for better prediction
+    public float bodyLookAhead = 0.6f; 
     
     [Tooltip("How high to lift the foot.")]
     public float stepLiftHeight = 0.35f;
@@ -36,88 +36,82 @@ public class StairClimberIK : MonoBehaviour
     {
         if (!animator) return;
 
-        // Set Weights
         animator.SetIKPositionWeight(AvatarIKGoal.LeftFoot, 1);
         animator.SetIKRotationWeight(AvatarIKGoal.LeftFoot, 1);
         animator.SetIKPositionWeight(AvatarIKGoal.RightFoot, 1);
         animator.SetIKRotationWeight(AvatarIKGoal.RightFoot, 1);
 
-        // Process Feet
-        HandleFoot(AvatarIKGoal.LeftFoot, ref lFootPos, ref lFootRot, -0.15f); // Left side offset
-        HandleFoot(AvatarIKGoal.RightFoot, ref rFootPos, ref rFootRot, 0.15f); // Right side offset
+        HandleFoot(AvatarIKGoal.LeftFoot, ref lFootPos, ref lFootRot, -0.15f);
+        HandleFoot(AvatarIKGoal.RightFoot, ref rFootPos, ref rFootRot, 0.15f);
     }
 
     void HandleFoot(AvatarIKGoal goal, ref Vector3 currentPos, ref Quaternion currentRot, float sideOffset)
     {
-        // 1. Animation Target
         Vector3 animPos = animator.GetIKPosition(goal);
         Quaternion animRot = animator.GetIKRotation(goal);
 
         Vector3 targetPos = animPos;
         Quaternion targetRot = animRot;
 
-        // --- FIX 1: Body-Based Lookahead ---
-        // Instead of raycasting from the foot (which might be behind us),
-        // we raycast from the BODY position, offset to the side of the foot.
+        // --- PREDICTION RAYS ---
         Vector3 hipPos = transform.position + (transform.right * sideOffset);
-        Vector3 forwardProbeOrigin = hipPos + Vector3.up * 0.5f; // Knee height
+        Vector3 forwardProbeOrigin = hipPos + Vector3.up * 0.5f; 
         Vector3 forwardProbe = forwardProbeOrigin + (transform.forward * bodyLookAhead);
 
         RaycastHit hitNow, hitFuture, hitWall;
         
-        // A. Check Ground Directly Below Foot
-        bool groundFound = Physics.Raycast(animPos + Vector3.up * 0.5f, Vector3.down, out hitNow, 1.5f, groundLayer);
-        
-        // B. Check Ground Ahead (From Hips)
-        bool futureFound = Physics.Raycast(forwardProbe, Vector3.down, out hitFuture, 1.5f, groundLayer);
+        bool groundFound = Physics.Raycast(animPos + Vector3.up * 0.5f, Vector3.down, out hitNow, 2.0f, groundLayer); // Increased depth check
+        bool futureFound = Physics.Raycast(forwardProbe, Vector3.down, out hitFuture, 2.5f, groundLayer); // Deeper check for stairs down
 
-        // C. Check for Wall/Riser (Shin Ray)
-        // Cast a ray forward from the ankle height to detect the vertical step face
         bool wallFound = Physics.Raycast(animPos + Vector3.up * 0.1f, transform.forward, out hitWall, toeRayLength, groundLayer);
 
         if (groundFound)
         {
-            // Default to current ground
+            // Default: stick to current ground
             targetPos = hitNow.point;
             targetPos.y += footOffset;
             
-            // Calculate slope rotation
+            // Slope rotation
             Vector3 fwd = animRot * Vector3.forward;
             targetRot = Quaternion.LookRotation(Vector3.ProjectOnPlane(fwd, hitNow.normal), hitNow.normal);
 
-            // --- STAIR LOGIC ---
+            // --- STAIR LOGIC (UP & DOWN) ---
             float liftAmount = 0f;
 
-            // Condition 1: The ground ahead is higher (Standard Climb)
+            // 1. Step UP: Ground ahead is higher
             if (futureFound && hitFuture.point.y > hitNow.point.y + 0.1f)
             {
                 liftAmount = stepLiftHeight;
             }
-            // Condition 2: We hit a wall with our shin (Toe Stub Fix)
-            else if (wallFound && hitWall.normal.y < 0.1f) // Checks if surface is vertical
+            // 2. Step DOWN: Ground ahead is LOWER
+            else if (futureFound && hitFuture.point.y < hitNow.point.y - 0.1f)
+            {
+                // We found a drop ahead. 
+                // We still apply lift so the foot doesn't clip the edge of the current step 
+                // as it moves towards the lower step.
+                liftAmount = stepLiftHeight * 0.8f; // Slightly less lift for going down often looks better
+            }
+            // 3. Toe Stub Fix
+            else if (wallFound && hitWall.normal.y < 0.1f) 
             {
                 liftAmount = stepLiftHeight;
             }
 
-            // Apply Lift (Smoothly)
-            // If we need to lift, we force the Y position up
+            // Apply the Arc
             if (liftAmount > 0)
             {
-                // We use distance to the future step to create an arc
+                // Distance to the future target (ignoring height differences)
                 float dist = Vector3.Distance(new Vector3(animPos.x, 0, animPos.z), new Vector3(hitFuture.point.x, 0, hitFuture.point.z));
-                float arc = Mathf.Clamp01(1.5f - dist); // Stronger lift when closer
-                targetPos.y += liftAmount * arc;
+                float arc = Mathf.Clamp01(1.5f - dist); 
                 
-                // Also push the foot slightly forward so it doesn't clip the edge
+                targetPos.y += liftAmount * arc;
                 targetPos += transform.forward * 0.1f * arc;
             }
         }
 
-        // 3. Interpolate
         currentPos = Vector3.Lerp(currentPos, targetPos, Time.deltaTime * ikLerpSpeed);
         currentRot = Quaternion.Lerp(currentRot, targetRot, Time.deltaTime * ikLerpSpeed);
 
-        // 4. Apply
         animator.SetIKPosition(goal, currentPos);
         animator.SetIKRotation(goal, currentRot);
     }
