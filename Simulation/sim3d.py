@@ -16,8 +16,6 @@ ax.set_xlabel('X')
 ax.set_ylabel('Z')
 ax.set_zlabel('Y (vertical)')
 
-origin = np.array([0.0, 0.0, 0.0])
-
 base_O1 = np.array([0.0, 0.0, 1.0])
 base_O2 = np.array([0.0, 0.0, -1.0])
 
@@ -39,6 +37,16 @@ A1_dot, = ax.plot([], [], [], 'r*', markersize=10)
 A2_dot, = ax.plot([], [], [], 'b*', markersize=10)
 link_line, = ax.plot([], [], [], 'k-')
 
+circle1_line, = ax.plot([], [], [], 'r--', linewidth=1)
+circle2_line, = ax.plot([], [], [], 'b--', linewidth=1)
+
+theta = np.linspace(0, 2*np.pi, 100)
+unit_circle = np.stack([
+    np.cos(theta),
+    np.sin(theta),
+    np.zeros_like(theta)
+], axis=1)
+
 def update(frame):
     global circle_angle
 
@@ -49,14 +57,17 @@ def update(frame):
 
     circle_angle += 0.05
 
-    local_circle = np.array([
+    local_pos = np.array([
         np.cos(circle_angle),
         np.sin(circle_angle),
         0.0
     ])
 
-    A1 = O1 + R @ local_circle
-    A2 = O2 + R @ local_circle
+    A1 = O1 + R @ local_pos
+    A2 = O2 + R @ local_pos
+
+    circle1 = O1 + (unit_circle @ R.T)
+    circle2 = O2 + (unit_circle @ R.T)
 
     x, y, z = to_plot(O1)
     O1_dot.set_data([x], [y])
@@ -79,7 +90,18 @@ def update(frame):
     link_line.set_data([x1, x2], [y1, y2])
     link_line.set_3d_properties([z1, z2])
 
-    return O1_dot, O2_dot, A1_dot, A2_dot, link_line
+    cx, cy, cz = zip(*[to_plot(p) for p in circle1])
+    circle1_line.set_data(cx, cy)
+    circle1_line.set_3d_properties(cz)
+
+    cx, cy, cz = zip(*[to_plot(p) for p in circle2])
+    circle2_line.set_data(cx, cy)
+    circle2_line.set_3d_properties(cz)
+
+    return (
+        O1_dot, O2_dot, A1_dot, A2_dot,
+        link_line, circle1_line, circle2_line
+    )
 
 def on_key(event):
     global rotation_y
