@@ -11,6 +11,8 @@ ax = fig.add_subplot(111, projection='3d')
 ax.set_xlim(-3, 3)
 ax.set_ylim(-3, 3)
 ax.set_zlim(-3, 3)
+ax.set_box_aspect([1, 1, 1])
+ax.grid(True)
 
 ax.set_xlabel('X')
 ax.set_ylabel('Z')
@@ -31,12 +33,12 @@ def rot_y(theta):
         [-s, 0, c]
     ])
 
+O_dot,  = ax.plot([], [], [], 'ko', markersize=5)
 O1_dot, = ax.plot([], [], [], 'ro', markersize=6)
 O2_dot, = ax.plot([], [], [], 'bo', markersize=6)
 A1_dot, = ax.plot([], [], [], 'r*', markersize=10)
 A2_dot, = ax.plot([], [], [], 'b*', markersize=10)
 link_line, = ax.plot([], [], [], 'k-')
-
 circle1_line, = ax.plot([], [], [], 'r--', linewidth=1)
 circle2_line, = ax.plot([], [], [], 'b--', linewidth=1)
 
@@ -69,21 +71,19 @@ def update(frame):
     circle1 = O1 + (unit_circle @ R.T)
     circle2 = O2 + (unit_circle @ R.T)
 
-    x, y, z = to_plot(O1)
-    O1_dot.set_data([x], [y])
-    O1_dot.set_3d_properties([z])
+    x, y, z = to_plot(np.array([0.0, 0.0, 0.0]))
+    O_dot.set_data([x], [y])
+    O_dot.set_3d_properties([z])
 
-    x, y, z = to_plot(O2)
-    O2_dot.set_data([x], [y])
-    O2_dot.set_3d_properties([z])
-
-    x, y, z = to_plot(A1)
-    A1_dot.set_data([x], [y])
-    A1_dot.set_3d_properties([z])
-
-    x, y, z = to_plot(A2)
-    A2_dot.set_data([x], [y])
-    A2_dot.set_3d_properties([z])
+    for dot, p in [
+        (O1_dot, O1),
+        (O2_dot, O2),
+        (A1_dot, A1),
+        (A2_dot, A2),
+    ]:
+        x, y, z = to_plot(p)
+        dot.set_data([x], [y])
+        dot.set_3d_properties([z])
 
     x1, y1, z1 = to_plot(O1)
     x2, y2, z2 = to_plot(O2)
@@ -99,6 +99,7 @@ def update(frame):
     circle2_line.set_3d_properties(cz)
 
     return (
+        O_dot,
         O1_dot, O2_dot, A1_dot, A2_dot,
         link_line, circle1_line, circle2_line
     )
@@ -113,5 +114,4 @@ def on_key(event):
 fig.canvas.mpl_connect('key_press_event', on_key)
 
 ani = FuncAnimation(fig, update, interval=30)
-
 plt.show()
