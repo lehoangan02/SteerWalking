@@ -24,6 +24,8 @@ base_O2 = np.array([0.0, 0.0, -1.0])
 rotation_y = 0.0
 circle_angle = 0.0
 
+STEP = 0.02
+
 def rot_y(theta):
     c = np.cos(theta)
     s = np.sin(theta)
@@ -107,9 +109,9 @@ def update(frame):
 def on_key(event):
     global rotation_y
     if event.key == 'left':
-        rotation_y += 0.1
+        rotation_y += STEP
     if event.key == 'right':
-        rotation_y -= 0.1
+        rotation_y -= STEP
 
 fig.canvas.mpl_connect('key_press_event', on_key)
 
