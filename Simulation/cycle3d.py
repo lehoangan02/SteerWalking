@@ -160,10 +160,10 @@ def update(frame):
         f"Phase A2 = {phase2: .3f} rad ({np.degrees(phase2): .1f}°)"
     )
 
-    print(
-        f"A1 rotation phase: {np.degrees(phase1):.3f} deg\n"
-        f"A1 Position: ({A1[0]:.6f}, {A1[1]:.6f}, {A1[2]:.6f})"
-    )
+    # print(
+    #     f"A1 rotation phase: {np.degrees(phase1):.3f} deg\n"
+    #     f"A1 Position: ({A1[0]:.6f}, {A1[1]:.6f}, {A1[2]:.6f})"
+    # )
 
     return (
         O_dot, O1_dot, O2_dot, A1_dot, A2_dot,
