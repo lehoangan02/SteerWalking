@@ -2,10 +2,13 @@ import socket
 import json
 import threading
 
+DEGREES_PER_STATE = 24
+
+
 class RudderReceiver:
     def __init__(self, port=5067):
         self.state = {
-            "rotate": 0,
+            "rotate": 0.0,
             "button": 0
         }
 
@@ -21,7 +24,10 @@ class RudderReceiver:
             msg = json.loads(data.decode())
 
             if msg.get("type") == "rudder":
-                self.state["rotate"] = msg["rotate"]
+                raw_state = msg["rotate"]
+
+                # Convert state (1..9) → degrees
+                self.state["rotate"] = raw_state * DEGREES_PER_STATE
                 self.state["button"] = msg["button"]
 
     def get(self):
