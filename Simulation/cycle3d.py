@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from mpl_toolkits.mplot3d import proj3d
+import socket
+import json
 
 def to_plot(p):
     return p[0], p[2], p[1]
@@ -15,6 +17,10 @@ def label_at_point(ax, text_obj, p, dx=6, dy=6):
     y_disp += dy
     x_final, y_final = inv.transform((x_disp, y_disp))
     text_obj.set_position((x_final, y_final))
+
+UDP_IP = "127.0.0.1"
+UDP_PORT = 9001
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
@@ -74,6 +80,14 @@ unit_circle = np.stack([
     np.zeros_like(theta)
 ], axis=1)
 
+def send_udp(A1, A2, rudder_deg):
+    payload = {
+        "A1": {"x": float(A1[0]), "y": float(A1[1]), "z": float(A1[2])},
+        "A2": {"x": float(A2[0]), "y": float(A2[1]), "z": float(A2[2])},
+        "rudder_deg": float(rudder_deg)
+    }
+    sock.sendto(json.dumps(payload).encode("utf-8"), (UDP_IP, UDP_PORT))
+
 def update(frame):
     global circle_angle
 
@@ -102,6 +116,8 @@ def update(frame):
 
     A1 = O1 + R @ a1_local
     A2 = O2 + R @ a2_local
+
+    send_udp(A1, A2, np.degrees(rotation_y))
 
     circle1 = O1 + (unit_circle @ R.T) * RADIUS
     circle2 = O2 + (unit_circle @ R.T) * RADIUS
