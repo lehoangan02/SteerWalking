@@ -97,7 +97,7 @@ def update(frame):
     O1 = R @ base_O1
     O2 = R @ base_O2
 
-    circle_angle += 0.05
+    circle_angle += 0.1
 
     phase1 = circle_angle % (2*np.pi)
     phase2 = (circle_angle + np.pi) % (2*np.pi)
