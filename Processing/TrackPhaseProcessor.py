@@ -1,3 +1,8 @@
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from geometry_utils import make_point, angle
 import time
 
@@ -21,6 +26,9 @@ class TrackerPhaseProcessor:
             return self.phase
 
         current = make_point(*A1)
+
+        current_float = (float(current.x), float(current.y), float(current.z))
+        print("A1 Position:", current_float)
 
         if self.prev_point is None:
             self.prev_point = current
