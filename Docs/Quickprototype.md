@@ -6,8 +6,11 @@ This document describes **how data flows through the current system**, focusing 
 
 ## 1. High-Level Architecture
 
+
+![Device process diagram](Devices.svg)
+
 ```
-Python Simulator
+Simulated/Real Deivices
    ↓ (UDP / JSON)
 UDP_SimulatedReceiver
    ↓ (TrackerPayload)
