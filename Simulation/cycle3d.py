@@ -85,6 +85,9 @@ def update(frame):
 
     circle_angle += 0.05
 
+    phase1 = circle_angle % (2*np.pi)
+    phase2 = (circle_angle + np.pi) % (2*np.pi)
+
     a1_local = RADIUS * np.array([
         np.cos(circle_angle),
         np.sin(circle_angle),
@@ -135,7 +138,10 @@ def update(frame):
         f"O1 = ({O1[0]: .2f}, {O1[1]: .2f}, {O1[2]: .2f})\n"
         f"O2 = ({O2[0]: .2f}, {O2[1]: .2f}, {O2[2]: .2f})\n"
         f"A1 = ({A1[0]: .2f}, {A1[1]: .2f}, {A1[2]: .2f})\n"
-        f"A2 = ({A2[0]: .2f}, {A2[1]: .2f}, {A2[2]: .2f})"
+        f"A2 = ({A2[0]: .2f}, {A2[1]: .2f}, {A2[2]: .2f})\n\n"
+        f"Rudder = {rotation_y: .3f} rad ({np.degrees(rotation_y): .1f}°)\n"
+        f"Phase A1 = {phase1: .3f} rad ({np.degrees(phase1): .1f}°)\n"
+        f"Phase A2 = {phase2: .3f} rad ({np.degrees(phase2): .1f}°)"
     )
 
     return (
