@@ -12,17 +12,26 @@ sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 rotor = RotaryEncoder(a=17, b=18, max_steps=0)
 button = Button(22)
 
-def send(data):
+button_state = 0
+
+def send_state():
+    data = {
+        "type": "input",
+        "rotate": rotor.steps,
+        "button": button_state
+    }
     sock.sendto(json.dumps(data).encode(), (UDP_IP, UDP_PORT))
+    print(data)
 
 def rotate():
-    send({"type": "rotate", "value": rotor.steps})
-    print(f"Current Value: {rotor.steps}")
+    send_state()
 
 def press():
+    global button_state
+    button_state = 1
+    send_state()
+    button_state = 0
     rotor.steps = 0
-    send({"type": "button"})
-    print("Button Pressed!")
 
 rotor.when_rotated = rotate
 button.when_pressed = press
