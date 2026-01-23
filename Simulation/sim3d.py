@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
+def to_plot(p):
+    return p[0], p[2], p[1]
+
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
@@ -10,8 +13,8 @@ ax.set_ylim(-3, 3)
 ax.set_zlim(-3, 3)
 
 ax.set_xlabel('X')
-ax.set_ylabel('Y')
-ax.set_zlabel('Z')
+ax.set_ylabel('Z')
+ax.set_zlabel('Y (vertical)')
 
 origin = np.array([0.0, 0.0, 0.0])
 
@@ -55,20 +58,26 @@ def update(frame):
     A1 = O1 + R @ local_circle
     A2 = O2 + R @ local_circle
 
-    O1_dot.set_data([O1[0]], [O1[1]])
-    O1_dot.set_3d_properties([O1[2]])
+    x, y, z = to_plot(O1)
+    O1_dot.set_data([x], [y])
+    O1_dot.set_3d_properties([z])
 
-    O2_dot.set_data([O2[0]], [O2[1]])
-    O2_dot.set_3d_properties([O2[2]])
+    x, y, z = to_plot(O2)
+    O2_dot.set_data([x], [y])
+    O2_dot.set_3d_properties([z])
 
-    A1_dot.set_data([A1[0]], [A1[1]])
-    A1_dot.set_3d_properties([A1[2]])
+    x, y, z = to_plot(A1)
+    A1_dot.set_data([x], [y])
+    A1_dot.set_3d_properties([z])
 
-    A2_dot.set_data([A2[0]], [A2[1]])
-    A2_dot.set_3d_properties([A2[2]])
+    x, y, z = to_plot(A2)
+    A2_dot.set_data([x], [y])
+    A2_dot.set_3d_properties([z])
 
-    link_line.set_data([O1[0], O2[0]], [O1[1], O2[1]])
-    link_line.set_3d_properties([O1[2], O2[2]])
+    x1, y1, z1 = to_plot(O1)
+    x2, y2, z2 = to_plot(O2)
+    link_line.set_data([x1, x2], [y1, y2])
+    link_line.set_3d_properties([z1, z2])
 
     return O1_dot, O2_dot, A1_dot, A2_dot, link_line
 
