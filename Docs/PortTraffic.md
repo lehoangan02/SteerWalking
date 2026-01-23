@@ -3,7 +3,7 @@
 This document details the network port traffic and payload formats used in the system.
 
 ## 1. Angle Data Port
-Port: `9000` (UDP)
+Port: `9000` (UDP, Everyone)
 
 ```json
 {
@@ -14,7 +14,7 @@ Port: `9000` (UDP)
 ```
 
 ## 2. Pedal Tracker and Rudder Data Port
-Port: `9001` (UDP)
+Port: `9001` (UDP, Localhost Only)
 
 ```json
 {
