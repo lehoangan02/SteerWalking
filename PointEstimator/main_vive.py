@@ -58,9 +58,11 @@ try:
             elif not center_sent:
                 udp.send_circle()
                 center_sent = True
-
-            udp.send_xyz_position(pos)
-            print(pos)
+            else:
+            #udp.send_xyz_position(pos)
+                ang = udp.send_degree_position(pos)
+                print(ang)
+                #print(pos)
             accumulator -= SEND_DT
 
         time.sleep(0.001)
