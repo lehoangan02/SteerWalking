@@ -11,33 +11,39 @@ public class SyncLegs : MonoBehaviour
     public float stepHeight = 0.3f;
     public float stridePrediction = 0.5f;
 
+    [Header("Real Device Calibration")]
+    [Tooltip("Rotates the walking circle. Adjust this until legs look natural.")]
+    [Range(0, 360)] public float angleOffset = 0f;
+    
+    [Tooltip("Smoothing factor for the harsh signal. Higher = Smoother.")]
+    public float smoothTime = 10f;
+
     [Header("Pose Corrections")]
     public float footOffset = 0.1f;
     public float hipHeight = 0.0f;
     public bool forceArmsDown = true;
     public LayerMask groundLayer;
 
-    // --- NEW: EXTERNAL CONTROL ---
+    // --- EXTERNAL CONTROL ---
     private float externalAngle = -1f; 
-
-    /// <summary> Called by MasterController to force the legs to a specific walk phase </summary>
     public void UpdateStepPhase(float angle) { externalAngle = angle; }
-    
-    /// <summary> Call this to hand control back to the UDP Python script </summary>
     public void UseUDPControl() { externalAngle = -1f; }
-    // ----------------------------
+    // ------------------------
 
     private Animator animator;
     private Vector3 rFootPos, lFootPos;
     private Quaternion rFootRot, lFootRot;
     private Vector3 rKneePos, lKneePos;
     private Vector3 rStepStart, lStepStart;
+    
+    // Smoothing state
+    private float currentAngle = 0f;
     private bool lastPhaseWasRight = false;
 
     void Start()
     {
         animator = GetComponent<Animator>();
-        if (!udpReceiver) udpReceiver = FindFirstObjectByType<UDP_SimulatedReceiver>();
+        if (!udpReceiver) udpReceiver = FindObjectOfType<UDP_SimulatedReceiver>();
         if (!playerMovement) playerMovement = GetComponent<PlayerMovement>();
 
         Vector3 initialR = GetGroundPos(transform.position + transform.right * 0.2f);
@@ -49,31 +55,43 @@ public class SyncLegs : MonoBehaviour
 
     void Update()
     {
-        float angleDeg = 0;
+        float targetAngle = 0;
 
-        // 1. DECIDE SOURCE: External (Keyboard) vs UDP (Python)
+        // 1. GET RAW INPUT
         if (externalAngle >= 0)
         {
-            // Use the angle sent by the Master Controller
-            angleDeg = externalAngle;
+            targetAngle = externalAngle;
         }
         else if (udpReceiver != null)
         {
-            // Use the angle from the UDP tracker
             Vector3 trackerPos = udpReceiver.GetTrackerPosition();
+            if (trackerPos == Vector3.zero) return; // No data yet
+
             float angleRad = Mathf.Atan2(trackerPos.z, trackerPos.x);
-            angleDeg = angleRad * Mathf.Rad2Deg;
-            if (angleDeg < 0) angleDeg += 360f;
+            targetAngle = angleRad * Mathf.Rad2Deg;
+            if (targetAngle < 0) targetAngle += 360f;
         }
         else
         {
-            return; // No data source available
+            return; 
         }
 
-        // 2. DETERMINE PHASE
-        bool isRightSwing = (angleDeg >= 0 && angleDeg < 180);
+        // 2. APPLY OFFSET (Fixes the "Twisted Legs" look)
+        targetAngle = (targetAngle + angleOffset) % 360f;
 
-        // 3. DETECT NEW STEP START
+        // 3. SMOOTHING (Fixes the "Harsh" signal)
+        // LerpAngle handles the 360 -> 0 wrap-around correctly
+        currentAngle = Mathf.LerpAngle(currentAngle, targetAngle, Time.deltaTime * smoothTime);
+        
+        // Normalize to 0-360 for logic
+        float finalAngle = currentAngle;
+        if (finalAngle < 0) finalAngle += 360f;
+        finalAngle = finalAngle % 360f;
+
+        // 4. DETERMINE PHASE
+        bool isRightSwing = (finalAngle >= 0 && finalAngle < 180);
+
+        // 5. DETECT NEW STEP START
         if (isRightSwing != lastPhaseWasRight)
         {
             if (isRightSwing) rStepStart = rFootPos;
@@ -81,27 +99,39 @@ public class SyncLegs : MonoBehaviour
             lastPhaseWasRight = isRightSwing;
         }
 
-        // 4. CALCULATE ANIMATION
-        // We use the playerMovement speed to determine how far the leg reaches
+        // 6. ANIMATE LEGS
         float velocityMag = playerMovement ? (playerMovement.speed) : 0f;
+        // Use transform.forward explicitly to ensure we walk in the direction we face
         Vector3 futurePos = transform.position + (transform.forward * velocityMag * stridePrediction);
 
         if (isRightSwing)
         {
-            float t = angleDeg / 180f;
+            float t = finalAngle / 180f; // 0 to 1
+            float stepArc = Mathf.Sin(t * Mathf.PI);
+
             Vector3 target = GetGroundPos(futurePos + transform.right * 0.2f);
             rFootPos = Vector3.Lerp(rStepStart, target, t);
-            rFootPos.y += Mathf.Sin(t * Mathf.PI) * stepHeight;
+            rFootPos.y += stepArc * stepHeight;
+            
+            // Align foot rotation to forward
             rFootRot = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(transform.forward), t);
+            
+            // Plant other foot
             lFootPos = GetGroundPos(lFootPos); 
         }
         else
         {
-            float t = (angleDeg - 180f) / 180f;
+            float t = (finalAngle - 180f) / 180f; // 0 to 1
+            float stepArc = Mathf.Sin(t * Mathf.PI);
+
             Vector3 target = GetGroundPos(futurePos - transform.right * 0.2f);
             lFootPos = Vector3.Lerp(lStepStart, target, t);
-            lFootPos.y += Mathf.Sin(t * Mathf.PI) * stepHeight;
+            lFootPos.y += stepArc * stepHeight;
+
+            // Align foot rotation to forward
             lFootRot = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(transform.forward), t);
+            
+            // Plant other foot
             rFootPos = GetGroundPos(rFootPos);
         }
 
@@ -109,15 +139,17 @@ public class SyncLegs : MonoBehaviour
         lKneePos = transform.position + transform.forward - transform.right * 0.2f;
     }
 
-    // ... (Keep your OnAnimatorIK, SetFootIK, and GetGroundPos functions exactly as they were) ...
+    // --- IK LOGIC (Same as before) ---
     void OnAnimatorIK(int layerIndex)
     {
         if (!animator) return;
         if (hipHeight != 0) animator.bodyPosition += Vector3.up * hipHeight;
         SetFootIK(AvatarIKGoal.RightFoot, rFootPos, rFootRot, rKneePos);
         SetFootIK(AvatarIKGoal.LeftFoot, lFootPos, lFootRot, lKneePos);
+        
         if (forceArmsDown)
         {
+            // Simple arm lock
             animator.SetIKPositionWeight(AvatarIKGoal.RightHand, 0.6f);
             animator.SetIKRotationWeight(AvatarIKGoal.RightHand, 0.6f);
             animator.SetIKPosition(AvatarIKGoal.RightHand, transform.position + (transform.right * 0.35f) + (transform.up * 0.9f));

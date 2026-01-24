@@ -22,7 +22,7 @@ class TrackerUdpBroadcaster:
         self.v_norm = None
         self.redius = None
         self.yline = None
-        self.num_point_init = 100
+        self.num_point_init = 10
         self._init_points = []
         
         self.prev_ang = 0
@@ -47,7 +47,7 @@ class TrackerUdpBroadcaster:
             return True
         return False
     
-    def angle_diff_deg(curr, prev):
+    def angle_diff_deg(self,curr, prev):
         diff = curr - prev
         if diff > 180:
             diff -= 360
@@ -79,9 +79,27 @@ class TrackerUdpBroadcaster:
 
         origin, highest = self.yline
         angle_deg = angle_deg_from_highest(origin, highest, pos)
+        
+        # =========================================================
+        # [FIX] ALIGNMENT SETTINGS
+        # Change these if the character is wrong!
+        # =========================================================
+        REVERSE_DIRECTION = False   # Set True if Left/Right are swapped
+        ANGLE_OFFSET = 180.0        # Set to 0, 90, 180, or 270 to rotate starting point
+        # =========================================================
+
+        # 1. Apply Reversal (CW vs CCW)
+        if REVERSE_DIRECTION:
+            angle_deg = 360.0 - angle_deg
+
+        # 2. Apply Offset (Fixes "Opposite Side" issue)
+        angle_deg = (angle_deg + ANGLE_OFFSET) % 360.0
+
         ts = time.time()
         
+        # --- VELOCITY CALCULATION ---
         dt = ts - self.prev_time if self.prev_time else 0.0
+        
         if dt > 0:
             d_angle = self.angle_diff_deg(angle_deg, self.prev_ang)
             angular_velocity = d_angle / dt
@@ -91,16 +109,22 @@ class TrackerUdpBroadcaster:
         self.prev_time = ts
         self.prev_ang = angle_deg
         
+        # We send ABS(velocity) because Unity just wants "Speed", 
+        # the direction is handled by "angle_deg"
         packet = json.dumps(
             {
-                "angle_deg": angle_deg,
-                "angular_velocity": angular_velocity,
+                "angle_deg": -angle_deg,
+                "angular_velocity": abs(angular_velocity), 
                 "ts": ts,
             }
         ).encode("utf-8")
         self.sock.sendto(packet, self.addr)
-        return angle_deg
-
+        
+        # Verify in terminal
+        # print(f"Raw: {angle_deg:.1f} | Vel: {angular_velocity:.1f}")
+        
+        return angle_deg, angular_velocity
+        
     def send_circle(self):
         if self.circle is None:
             return

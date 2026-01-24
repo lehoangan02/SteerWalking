@@ -20,7 +20,7 @@ elif "--ui" in args:
 
 # ================= UDP CONFIG =================
 UDP_IP = args[0] if len(args) > 0 else "127.0.0.1"
-UDP_PORT = int(args[1]) if len(args) > 1 else 9000
+UDP_PORT = int(args[1]) if len(args) > 1 else 9000 # Make sure this matches Unity!
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # ================= FIXED SEND RATE =================
@@ -108,12 +108,18 @@ while running:
     while send_accumulator >= SEND_DT:
         angle_deg = (angle_deg + motion_speed * 360.0 * SEND_DT) % 360.0
 
+        # --- THIS WAS THE MISSING PART ---
+        # We calculate degrees per second: motion_speed (rot/s) * 360
+        angular_vel = motion_speed * 360.0 
+
         packet = json.dumps(
             {
                 "angle_deg": angle_deg,
-                "ts": now,  # monotonic timestamp
+                "angular_velocity": angular_vel, # <--- ADDED THIS LINE
+                "ts": now,  
             }
         ).encode("utf-8")
+        print("angle_deg:", angle_deg, "angular_velocity:", angular_vel)
 
         sock.sendto(packet, (UDP_IP, UDP_PORT))
         send_accumulator -= SEND_DT
