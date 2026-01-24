@@ -10,7 +10,7 @@ SEND_HZ = 10.0
 SEND_DT = 1.0 / SEND_HZ
 last_time = time.perf_counter()
 accumulator = 0.0
-center_sent = False
+circle_sent = False
 
 # Real device
 # vt = ViveTrackers(OpenVRTrackerSource())
@@ -30,14 +30,15 @@ try:
             pos = vt.get_tracker_position()
             if not udp.get_circle():
                 udp._update_circle(pos)
-            elif not center_sent:
+            elif not circle_sent:
                 udp.send_circle()
-                center_sent = True
+                udp.send_yline()
+                circle_sent = True
             else:
             #udp.send_xyz_position(pos)
                 ang = udp.send_degree_position(pos)
                 print(ang)
-                #print(pos)
+                print(pos)
             accumulator -= SEND_DT
 
         time.sleep(0.001)

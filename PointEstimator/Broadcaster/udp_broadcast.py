@@ -46,6 +46,15 @@ class TrackerUdpBroadcaster:
             self._init_points = []
             return True
         return False
+    
+    def angle_diff_deg(curr, prev):
+        diff = curr - prev
+        if diff > 180:
+            diff -= 360
+        elif diff < -180:
+            diff += 360
+        return diff
+
 
     def send_xyz_position(self, pos):
         if pos is None:
@@ -71,8 +80,14 @@ class TrackerUdpBroadcaster:
         origin, highest = self.yline
         angle_deg = angle_deg_from_highest(origin, highest, pos)
         ts = time.time()
+        
         dt = ts - self.prev_time if self.prev_time else 0.0
-        angular_velocity = (angle_deg - self.prev_ang) / dt if dt > 0 else 0.0
+        if dt > 0:
+            d_angle = self.angle_diff_deg(angle_deg, self.prev_ang)
+            angular_velocity = d_angle / dt
+        else:
+            angular_velocity = 0.0
+
         self.prev_time = ts
         self.prev_ang = angle_deg
         
@@ -97,6 +112,21 @@ class TrackerUdpBroadcaster:
                 "radius": self.radius,
                 "ts": time.time(),
                 "type": "circle",
+            }
+        ).encode("utf-8")
+        self.sock.sendto(packet, self.addr)
+
+    def send_yline(self):
+        if self.yline is None:
+            return
+
+        origin, highest = self.yline
+        packet = json.dumps(
+            {
+                "origin": origin,
+                "highest": highest,
+                "ts": time.time(),
+                "type": "yline",
             }
         ).encode("utf-8")
         self.sock.sendto(packet, self.addr)
