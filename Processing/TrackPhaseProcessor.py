@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from sympy import atan2, deg
+import math
 from sympy import Point3D
 
 
@@ -17,15 +17,20 @@ class TrackPhaseProcessor:
         """
         Returns absolute phase in degrees [0, 360)
         """
-        v_x = tracker.x - self.center.x
-        v_y = tracker.y - self.center.y
+        # convert to floats to avoid SymPy NaN/Expr comparisons
+        v_x = float(tracker.x) - float(self.center.x)
+        v_y = float(tracker.y) - float(self.center.y)
 
-        phase = deg(atan2(v_y, v_x))
+        # handle degenerate (0,0) vector
+        if abs(v_x) < 1e-12 and abs(v_y) < 1e-12:
+            return 0.0
 
-        if phase < 0:
-            phase += 360
+        phase_rad = math.atan2(v_y, v_x)
+        phase_deg = math.degrees(phase_rad)
+        if phase_deg < 0:
+            phase_deg += 360.0
 
-        return float(phase)
+        return float(phase_deg)
 
 
 if __name__ == "__main__":

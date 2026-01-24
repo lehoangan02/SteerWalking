@@ -32,7 +32,6 @@ class ViveTrackers:
             0,
             openvr.k_unMaxTrackedDeviceCount
         )
-
         tracker_positions = []
 
         for i in range(openvr.k_unMaxTrackedDeviceCount):
@@ -42,25 +41,19 @@ class ViveTrackers:
             if self.vr.getTrackedDeviceClass(i) != openvr.TrackedDeviceClass_GenericTracker:
                 continue
 
-            if not poses[i].bPoseIsValid:
-                continue
-
-            tracker_positions.append(self._get_pose_position(poses[i]))
+            if poses[i].bPoseIsValid:
+                tracker_positions.append(self._get_pose_position(poses[i]))
+            else:
+                # keep placeholder for invalid pose so order of trackers is preserved
+                tracker_positions.append((0.0, 0.0, 0.0))
 
             if len(tracker_positions) >= 2:
                 break
 
-        if len(tracker_positions) < 2:
-            # check if tracker 1 is pose valid
-            if poses[0].bPoseIsValid == false:
-                print("Tracker 1 pose is not valid.")
-            if poses[1].bPoseIsValid == false:
-                print("Tracker 2 pose is not valid.")
-            return None, None
+        # always return two position tuples (pad with zeros if fewer trackers)
+        while len(tracker_positions) < 2:
+            tracker_positions.append((0.0, 0.0, 0.0))
 
-        t1, t2 = tracker_positions[0], tracker_positions[1]
-        print(f"Tracker 1: x={t1[0]:.3f}, y={t1[1]:.3f}, z={t1[2]:.3f}")
-        print(f"Tracker 2: x={t2[0]:.3f}, y={t2[1]:.3f}, z={t2[2]:.3f}")
         return tracker_positions[0], tracker_positions[1]
 
     def get_tracker_rotations(self):
@@ -69,7 +62,6 @@ class ViveTrackers:
             0,
             openvr.k_unMaxTrackedDeviceCount
         )
-
         tracker_rotations = []
 
         for i in range(openvr.k_unMaxTrackedDeviceCount):
@@ -79,18 +71,18 @@ class ViveTrackers:
             if self.vr.getTrackedDeviceClass(i) != openvr.TrackedDeviceClass_GenericTracker:
                 continue
 
-            if not poses[i].bPoseIsValid:
-                continue
-
-            R = self._rotation_matrix(poses[i])
-            euler = self._matrix_to_euler_deg(R)
-            tracker_rotations.append(euler)
+            if poses[i].bPoseIsValid:
+                R = self._rotation_matrix(poses[i])
+                euler = self._matrix_to_euler_deg(R)
+                tracker_rotations.append(euler)
+            else:
+                tracker_rotations.append((0.0, 0.0, 0.0))
 
             if len(tracker_rotations) >= 2:
                 break
 
-        if len(tracker_rotations) < 2:
-            return None, None
+        while len(tracker_rotations) < 2:
+            tracker_rotations.append((0.0, 0.0, 0.0))
 
         return tracker_rotations[0], tracker_rotations[1]
 
@@ -209,20 +201,23 @@ if __name__ == "__main__":
 
     try:
         while True:
-            t1, t2 = vt.get_tracker_positions()
-            r1, r2 = vt.get_tracker_rotations()
+            devices = vt.get_all_devices()
+            trackers = [d for d in devices if d["class"] == "Tracker"]
 
-            if t1 and t2:
-                print(f"Tracker 1: x={t1[0]:.3f}, y={t1[1]:.3f}, z={t1[2]:.3f}")
-                print(f"Tracker 2: x={t2[0]:.3f}, y={t2[1]:.3f}, z={t2[2]:.3f}")
-
-            if r1 and r2:
-                print(f"Tracker 1 Euler (deg): roll={r1[0]:.2f}, pitch={r1[1]:.2f}, yaw={r1[2]:.2f}")
-                print(f"Tracker 2 Euler (deg): roll={r2[0]:.2f}, pitch={r2[1]:.2f}, yaw={r2[2]:.2f}")
+            if trackers:
+                for n, d in enumerate(trackers, start=1):
+                    i = d["index"]
+                    if d["pose_valid"]:
+                        x, y, z = d["position"]
+                        roll, pitch, yaw = d["euler_deg"]
+                        print(f"Tracker {n} (device {i}): x={x:.3f}, y={y:.3f}, z={z:.3f}")
+                        print(f"Tracker {n} (device {i}) Euler (deg): roll={roll:.2f}, pitch={pitch:.2f}, yaw={yaw:.2f}")
+                    else:
+                        print(f"Tracker {n} (device {i}): Pose invalid")
             else:
-                print("Waiting for two trackers...")
+                print("No trackers detected")
 
-            time.sleep(0.5)
+            time.sleep(0.02)
 
     except KeyboardInterrupt:
         print("\nShutting down...")
