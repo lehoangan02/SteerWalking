@@ -18,27 +18,21 @@ class ViveTracker:
             openvr.k_unMaxTrackedDeviceCount
         )
         
-        tracker_count = 0
-        for i in range(openvr.k_unMaxTrackedDeviceCount):
-            if not self.vr.isTrackedDeviceConnected(i):
-                continue
+        i = 1
+        if not self.vr.isTrackedDeviceConnected(i):
+            print("[ViveTracker] Error: Tracker 2 not found")
+            return (0.0, 0.0, 0.0)
 
-            if self.vr.getTrackedDeviceClass(i) != openvr.TrackedDeviceClass_GenericTracker:
-                continue
+        if self.vr.getTrackedDeviceClass(i) != openvr.TrackedDeviceClass_GenericTracker:
+            print("[ViveTracker] Error: Device at index 1 is not a tracker")
+            return (0.0, 0.0, 0.0)
 
-            tracker_count += 1
-            
-            if tracker_count == 2:
-                if poses[i].bPoseIsValid:
-                    R = self._rotation_matrix(poses[i])
-                    return self._matrix_to_euler_deg(R)
-                else:
-                    print("[ViveTracker] Error: Tracker 2 pose is invalid")
-                    return (0.0, 0.0, 0.0)
-
-        # Tracker 2 not found
-        print("[ViveTracker] Error: Tracker 2 not found")
-        return (0.0, 0.0, 0.0)
+        if poses[i].bPoseIsValid:
+            R = self._rotation_matrix(poses[i])
+            return self._matrix_to_euler_deg(R)
+        else:
+            print("[ViveTracker] Error: Tracker 2 pose is invalid")
+            return (0.0, 0.0, 0.0)
 
     def _rotation_matrix(self, pose):
         m = pose.mDeviceToAbsoluteTracking
