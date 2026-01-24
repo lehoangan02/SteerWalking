@@ -1,3 +1,5 @@
+import argparse
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
@@ -18,8 +20,29 @@ def label_at_point(ax, text_obj, p, dx=6, dy=6):
     x_final, y_final = inv.transform((x_disp, y_disp))
     text_obj.set_position((x_final, y_final))
 
-UDP_IP = "127.0.0.1"
-UDP_PORT = 9001
+# Args: choose mode and IP/port routing
+parser = argparse.ArgumentParser(description="Cycle 3D simulator with Hai mode")
+parser.add_argument(
+    "--mode",
+    choices=["normal", "hai"],
+    default="normal",
+    help="normal: current behavior; hai: send positions compatible with Hai's pipeline",
+)
+parser.add_argument(
+    "--ip",
+    default="127.0.0.1",
+    help="Destination IP for UDP messages",
+)
+parser.add_argument(
+    "--port",
+    type=int,
+    help="Override destination UDP port (defaults: normal=9001, hai=9000)",
+)
+args = parser.parse_args()
+
+MODE = args.mode
+UDP_IP = args.ip
+UDP_PORT = args.port if args.port is not None else (9001 if MODE == "normal" else 9000)
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 fig = plt.figure()
@@ -88,6 +111,16 @@ def send_udp(A1, A2, rudder_deg):
     }
     sock.sendto(json.dumps(payload).encode("utf-8"), (UDP_IP, UDP_PORT))
 
+def send_udp_hai_point(P):
+    msg = {
+        # Hai's client defaults to type="pos" if absent
+        "x": float(P[0]),
+        "y": float(P[1]),
+        "z": float(P[2]),
+        "ts": time.time(),
+    }
+    sock.sendto(json.dumps(msg).encode("utf-8"), (UDP_IP, UDP_PORT))
+
 def update(frame):
     global circle_angle
 
@@ -117,7 +150,14 @@ def update(frame):
     A1 = O1 + R @ a1_local
     A2 = O2 + R @ a2_local
 
-    send_udp(A1, A2, np.degrees(rotation_y))
+    if MODE == "hai":
+        # Stream positions compatible with Hai's receiver (port 9000 by default).
+        # Send both points so his viewer can show two trackers.
+        send_udp_hai_point(A1)
+        send_udp_hai_point(A2)
+    else:
+        # Original payload for the normal mode.
+        send_udp(A1, A2, np.degrees(rotation_y))
 
     circle1 = O1 + (unit_circle @ R.T) * RADIUS
     circle2 = O2 + (unit_circle @ R.T) * RADIUS

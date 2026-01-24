@@ -86,6 +86,11 @@ class ViveTrackers:
 
         return tracker_rotations[0], tracker_rotations[1]
 
+    def get_tracker_2_rotation(self):
+        """Get roll, pitch, yaw (in degrees) of tracker 2 only."""
+        _, tracker_2_rot = self.get_tracker_rotations()
+        return tracker_2_rot
+
     def _rotation_matrix(self, pose):
         m = pose.mDeviceToAbsoluteTracking
         return (
