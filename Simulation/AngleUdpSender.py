@@ -25,6 +25,7 @@ class AngleUdpSender:
 
         self.prev_phase = None
         self.prev_time = None
+        self.send_count = 0
 
     def step(self):
         _, A1, A2 = self.dm.get()
@@ -55,11 +56,13 @@ class AngleUdpSender:
             "ts": now
         }
 
-        # print payload for debugging
-        try:
-            print("Sending payload:", json.dumps(payload))
-        except Exception:
-            print("Sending payload (unserializable):", payload)
+        # print payload for debugging every 10 sends
+        self.send_count += 1
+        if self.send_count % 10 == 0:
+            try:
+                print("Sending payload:", json.dumps(payload))
+            except Exception:
+                print("Sending payload (unserializable):", payload)
 
         self.sock.sendto(
             json.dumps(payload).encode("utf-8"),
@@ -95,7 +98,7 @@ if __name__ == "__main__":
     try:
         while True:
             sender.step()
-            time.sleep(0.0005)
+            time.sleep(0.01)
 
     finally:
         dm.shutdown()
