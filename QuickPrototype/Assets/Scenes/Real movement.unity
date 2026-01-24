@@ -731,7 +731,7 @@ MonoBehaviour:
   bodyLookAhead: 1
   stepLiftHeight: 0.5
   ikLerpSpeed: 25
-  toeRayLength: 0.4
+  toeRayLength: 0.5
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -1389,7 +1389,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: fd7e62b1b9b82a34fbe3f266af0d9bf5, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -23.01
+      value: -21.92
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: fd7e62b1b9b82a34fbe3f266af0d9bf5, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1479,7 +1479,9 @@ MonoBehaviour:
   stepWidth: 2
   stepHeight: 0.5
   stepDepth: 1
-  stepOffset: 0.2
+  stepOffset: 0.1
+  createDownStairs: 1
+  topPlatformLength: 3
   layerName: Stair
 --- !u!4 &2137506690
 Transform:
