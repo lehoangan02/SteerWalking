@@ -27,7 +27,9 @@ class AngleUdpSender:
         self.prev_time = None
 
     def step(self):
-        _, A1, _ = self.dm.get()
+        _, A1, A2 = self.dm.get()
+        if A1 is None:
+            A1 = A2
         if A1 is None:
             return
 
@@ -52,6 +54,12 @@ class AngleUdpSender:
             "angular_velocity": angular_velocity,
             "ts": now
         }
+
+        # print payload for debugging
+        try:
+            print("Sending payload:", json.dumps(payload))
+        except Exception:
+            print("Sending payload (unserializable):", payload)
 
         self.sock.sendto(
             json.dumps(payload).encode("utf-8"),

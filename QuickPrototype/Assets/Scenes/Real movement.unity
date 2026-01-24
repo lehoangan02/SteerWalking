@@ -781,7 +781,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5770e559006093f489f3529c8eb12243, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMasterController
-  activeMode: 1
+  activeMode: 2
   movement: {fileID: 733367224}
   legs: {fileID: 733367226}
   udp: {fileID: 1279990482}
