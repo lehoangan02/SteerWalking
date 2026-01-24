@@ -8,9 +8,7 @@ public class SyncLegs : MonoBehaviour
     public PlayerMovement playerMovement;
 
     [Header("Sync Settings")]
-    [Tooltip("How high to lift the foot during the step")]
     public float stepHeight = 0.3f;
-    [Tooltip("Multiplier to predict where to step based on speed")]
     public float stridePrediction = 0.5f;
 
     [Header("Pose Corrections")]
@@ -19,15 +17,22 @@ public class SyncLegs : MonoBehaviour
     public bool forceArmsDown = true;
     public LayerMask groundLayer;
 
-    // State
+    // --- NEW: EXTERNAL CONTROL ---
+    private float externalAngle = -1f; 
+
+    /// <summary> Called by MasterController to force the legs to a specific walk phase </summary>
+    public void UpdateStepPhase(float angle) { externalAngle = angle; }
+    
+    /// <summary> Call this to hand control back to the UDP Python script </summary>
+    public void UseUDPControl() { externalAngle = -1f; }
+    // ----------------------------
+
     private Animator animator;
     private Vector3 rFootPos, lFootPos;
     private Quaternion rFootRot, lFootRot;
     private Vector3 rKneePos, lKneePos;
-
-    // We need to remember where a step STARTED to lerp correctly
     private Vector3 rStepStart, lStepStart;
-    private bool lastPhaseWasRight = false; // Track phase changes
+    private bool lastPhaseWasRight = false;
 
     void Start()
     {
@@ -35,10 +40,8 @@ public class SyncLegs : MonoBehaviour
         if (!udpReceiver) udpReceiver = FindFirstObjectByType<UDP_SimulatedReceiver>();
         if (!playerMovement) playerMovement = GetComponent<PlayerMovement>();
 
-        // Initialize feet on ground
         Vector3 initialR = GetGroundPos(transform.position + transform.right * 0.2f);
         Vector3 initialL = GetGroundPos(transform.position - transform.right * 0.2f);
-        
         rFootPos = rStepStart = initialR;
         lFootPos = lStepStart = initialL;
         rFootRot = lFootRot = transform.rotation;
@@ -46,100 +49,79 @@ public class SyncLegs : MonoBehaviour
 
     void Update()
     {
-        if (!udpReceiver) return;
+        float angleDeg = 0;
 
-        // 1. GET ANGLE FROM SIMULATION
-        // We reconstruct the exact angle from the tracker position sent by Python
-        Vector3 trackerPos = udpReceiver.GetTrackerPosition();
-        // Atan2 gives us the angle in Radians (-PI to PI)
-        float angleRad = Mathf.Atan2(trackerPos.z, trackerPos.x);
-        float angleDeg = angleRad * Mathf.Rad2Deg;
-        // Convert to 0-360 range
-        if (angleDeg < 0) angleDeg += 360f;
+        // 1. DECIDE SOURCE: External (Keyboard) vs UDP (Python)
+        if (externalAngle >= 0)
+        {
+            // Use the angle sent by the Master Controller
+            angleDeg = externalAngle;
+        }
+        else if (udpReceiver != null)
+        {
+            // Use the angle from the UDP tracker
+            Vector3 trackerPos = udpReceiver.GetTrackerPosition();
+            float angleRad = Mathf.Atan2(trackerPos.z, trackerPos.x);
+            angleDeg = angleRad * Mathf.Rad2Deg;
+            if (angleDeg < 0) angleDeg += 360f;
+        }
+        else
+        {
+            return; // No data source available
+        }
 
         // 2. DETERMINE PHASE
-        // 0-180 degrees = Right Leg Swing
-        // 180-360 degrees = Left Leg Swing
-        // 270 degrees = Top of Circle (In Pygame's y-down coords, sin(270) is -1 (up))
         bool isRightSwing = (angleDeg >= 0 && angleDeg < 180);
 
         // 3. DETECT NEW STEP START
-        // If we switched from Left to Right (or vice versa), lock the start positions
         if (isRightSwing != lastPhaseWasRight)
         {
-            if (isRightSwing) rStepStart = rFootPos; // Right starts moving from where it is now
-            else              lStepStart = lFootPos; // Left starts moving from where it is now
-            
+            if (isRightSwing) rStepStart = rFootPos;
+            else lStepStart = lFootPos;
             lastPhaseWasRight = isRightSwing;
         }
 
         // 4. CALCULATE ANIMATION
-        float velocityMag = playerMovement ? (playerMovement.GetVelocity().magnitude * playerMovement.speed) : 0f;
+        // We use the playerMovement speed to determine how far the leg reaches
+        float velocityMag = playerMovement ? (playerMovement.speed) : 0f;
         Vector3 futurePos = transform.position + (transform.forward * velocityMag * stridePrediction);
 
         if (isRightSwing)
         {
-            // --- RIGHT LEG SWINGING ---
-            float t = angleDeg / 180f; // Normalize 0..180 to 0..1
-            
-            // Target is forward + right offset
+            float t = angleDeg / 180f;
             Vector3 target = GetGroundPos(futurePos + transform.right * 0.2f);
-            
-            // Lerp Pos
             rFootPos = Vector3.Lerp(rStepStart, target, t);
-            // Add arc (Sine wave peaks at t=0.5, which is 90 degrees)
             rFootPos.y += Mathf.Sin(t * Mathf.PI) * stepHeight;
-            
-            // Lerp Rot
             rFootRot = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(transform.forward), t);
-
-            // Left leg is Stance (Keep it pinned, maybe update Y for slopes)
             lFootPos = GetGroundPos(lFootPos); 
         }
         else
         {
-            // --- LEFT LEG SWINGING ---
-            float t = (angleDeg - 180f) / 180f; // Normalize 180..360 to 0..1
-            
-            // Target is forward - right offset
+            float t = (angleDeg - 180f) / 180f;
             Vector3 target = GetGroundPos(futurePos - transform.right * 0.2f);
-
-            // Lerp Pos
             lFootPos = Vector3.Lerp(lStepStart, target, t);
-            // Add arc (Sine wave peaks at t=0.5, which is 270 degrees)
             lFootPos.y += Mathf.Sin(t * Mathf.PI) * stepHeight;
-
-            // Lerp Rot
             lFootRot = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(transform.forward), t);
-
-            // Right leg is Stance
             rFootPos = GetGroundPos(rFootPos);
         }
 
-        // Knee Hints
         rKneePos = transform.position + transform.forward + transform.right * 0.2f;
         lKneePos = transform.position + transform.forward - transform.right * 0.2f;
     }
 
+    // ... (Keep your OnAnimatorIK, SetFootIK, and GetGroundPos functions exactly as they were) ...
     void OnAnimatorIK(int layerIndex)
     {
         if (!animator) return;
-
-        // Hip Adjustment
         if (hipHeight != 0) animator.bodyPosition += Vector3.up * hipHeight;
-
-        // Apply Feet
         SetFootIK(AvatarIKGoal.RightFoot, rFootPos, rFootRot, rKneePos);
         SetFootIK(AvatarIKGoal.LeftFoot, lFootPos, lFootRot, lKneePos);
-
-        // Arms
         if (forceArmsDown)
         {
             animator.SetIKPositionWeight(AvatarIKGoal.RightHand, 0.6f);
             animator.SetIKRotationWeight(AvatarIKGoal.RightHand, 0.6f);
             animator.SetIKPosition(AvatarIKGoal.RightHand, transform.position + (transform.right * 0.35f) + (transform.up * 0.9f));
             animator.SetIKRotation(AvatarIKGoal.RightHand, transform.rotation * Quaternion.Euler(0, 0, -15));
-
             animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, 0.6f);
             animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, 0.6f);
             animator.SetIKPosition(AvatarIKGoal.LeftHand, transform.position - (transform.right * 0.35f) + (transform.up * 0.9f));
@@ -153,7 +135,6 @@ public class SyncLegs : MonoBehaviour
         animator.SetIKRotationWeight(goal, 1f);
         animator.SetIKPosition(goal, pos);
         animator.SetIKRotation(goal, rot);
-
         var hint = (goal == AvatarIKGoal.RightFoot) ? AvatarIKHint.RightKnee : AvatarIKHint.LeftKnee;
         animator.SetIKHintPositionWeight(hint, 1f);
         animator.SetIKHintPosition(hint, kneeHint);
@@ -161,10 +142,8 @@ public class SyncLegs : MonoBehaviour
 
     Vector3 GetGroundPos(Vector3 origin)
     {
-        // Just find the Y height of the ground at this X/Z
         if (Physics.Raycast(origin + Vector3.up * 2f, Vector3.down, out RaycastHit hit, 5f, groundLayer))
             return new Vector3(origin.x, hit.point.y + footOffset, origin.z);
-        
         return new Vector3(origin.x, transform.position.y, origin.z);
     }
 }

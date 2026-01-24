@@ -3,35 +3,35 @@ using UnityEngine.InputSystem;
 
 public class KeyboardControl : MonoBehaviour
 {
-    PlayerMovement playerMovement;
+    public PlayerMasterController master;
+
     void Start()
     {
-        playerMovement = GetComponent<PlayerMovement>();
+        if (master == null) master = GetComponent<PlayerMasterController>();
     }
 
-    // Update is called once per frame
     void Update()
     {
         KeyBoardMovementControl();
     }
+
     void KeyBoardMovementControl()
     {
         if (Keyboard.current.eKey.isPressed)
         {
-            playerMovement.Rotate(1f);
+            master.Turn(1f);
         }
         if (Keyboard.current.qKey.isPressed)
         {
-            playerMovement.Rotate(-1f);
+            master.Turn(-1f);
         }
         if (Keyboard.current.wKey.isPressed)
         {
-            playerMovement.AddVelocity(transform.forward);
+            master.MoveForward();
         }
         if (Keyboard.current.sKey.isPressed)
         {
-            playerMovement.AddVelocity(-transform.forward);
+            master.MoveBackward();
         }
     }
-
 }
