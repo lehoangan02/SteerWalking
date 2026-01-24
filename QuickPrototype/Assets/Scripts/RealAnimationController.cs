@@ -24,21 +24,25 @@ public class UDP_LinearController : MonoBehaviour
         float rawAngVel = 0f;
         var payload = udpReceiver.GetLatestPayload();
         if (payload != null) rawAngVel = payload.angular_velocity; // deg/s
-
-        // 2. Convert to Normalized Effort (0 to 1)
+        MoveForward(rawAngVel);
+       
+    }
+    public void MoveForward(float amount)
+    {
+         // 1. Convert to Normalized Effort (0 to 1)
         // Assume 1 full rotation (360 deg/s) = "Standard Walk"
-        float effort = Mathf.Abs(rawAngVel) / 360f;
+        float effort = Mathf.Abs(amount) / 360f;
 
-        // 3. Calculate Target Speed (Meters/s)
+        // 2. Calculate Target Speed (Meters/s)
         float targetMetersPerSec = effort * targetWalkSpeed;
 
-        // 4. Smooth it
+        // 3. Smooth it
         currentSpeed = Mathf.SmoothDamp(currentSpeed, targetMetersPerSec, ref velocityRef, smoothing);
 
-        // 5. Apply to Movement
+        // 4. Apply to Movement
         // Note: We divide by playerMovement.speed because Action.cs multiplies it again!
         float normalizedVelocity = (playerMovement.speed > 0) ? (currentSpeed / playerMovement.speed) : 0;
         
-        playerMovement.velocity = transform.forward * normalizedVelocity;
+        playerMovement.AddVelocity(transform.forward * normalizedVelocity);
     }
 }

@@ -22,7 +22,6 @@ public class PlayerMovement : MonoBehaviour
     void Update()
     {
         TrackerMovementControl();
-        KeyBoardMovementControl();
     }
 
     void CheckStepUp(Vector3 moveDir)
@@ -68,7 +67,7 @@ public class PlayerMovement : MonoBehaviour
     {
         transform.position += offset;
     }
-    void Rotate(float angle)
+    public void Rotate(float angle)
     {
         transform.Rotate(0, -angle, 0);
     }
@@ -109,26 +108,16 @@ public class PlayerMovement : MonoBehaviour
         }
         
         Move(targetMove * Time.deltaTime);
+
+        // clear velocity after applying
+        velocity = Vector3.zero;
     }
-    void KeyBoardMovementControl()
+    public void AddVelocity(Vector3 addVel)
     {
-        if (Keyboard.current.eKey.isPressed)
-        {
-            Rotate(1f);
-        }
-        if (Keyboard.current.qKey.isPressed)
-        {
-            Rotate(-1f);
-        }
-        if (Keyboard.current.wKey.isPressed)
-        {
-            Move(transform.forward * speed * Time.deltaTime);
-        }
-        if (Keyboard.current.sKey.isPressed)
-        {
-            Move(-transform.forward * speed * Time.deltaTime);
-        }
-
-
+        velocity += addVel;
+    }
+    public Vector3 GetVelocity()
+    {
+        return velocity;
     }
 }

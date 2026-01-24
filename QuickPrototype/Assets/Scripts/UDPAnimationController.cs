@@ -74,7 +74,7 @@ public class UDPAnimationController : MonoBehaviour
         if (playerMovement.speed > 0)
         {
             float inputValues = currentSpeedVal / playerMovement.speed;
-            playerMovement.velocity = transform.forward * inputValues;
+            playerMovement.AddVelocity(transform.forward * inputValues);
         }
 
         // 5. Sync Animation Phase

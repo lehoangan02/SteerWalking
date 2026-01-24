@@ -74,7 +74,7 @@ public class SyncLegs : MonoBehaviour
         }
 
         // 4. CALCULATE ANIMATION
-        float velocityMag = playerMovement ? (playerMovement.velocity.magnitude * playerMovement.speed) : 0f;
+        float velocityMag = playerMovement ? (playerMovement.GetVelocity().magnitude * playerMovement.speed) : 0f;
         Vector3 futurePos = transform.position + (transform.forward * velocityMag * stridePrediction);
 
         if (isRightSwing)
