@@ -1,5 +1,5 @@
-from IoT.rudder_receiver import RudderReceiver
-from SteamVRTracking.ViveTrackers import ViveTrackers
+from .IoT.rudder_receiver import RudderReceiver
+from .SteamVRTracking.ViveTrackers import ViveTrackers
 
 
 class DeviceManager:

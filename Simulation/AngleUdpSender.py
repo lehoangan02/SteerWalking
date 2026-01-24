@@ -87,7 +87,7 @@ if __name__ == "__main__":
     try:
         while True:
             sender.step()
-            time.sleep(0.02)
+            time.sleep(0.0005)
 
     finally:
         dm.shutdown()
