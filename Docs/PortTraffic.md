@@ -31,3 +31,15 @@ Port: `9001` (UDP, Localhost Only)
     "rudder_deg": 30.0,
 }
 ```
+
+## 3. Rudder Pitch Data Port
+Port: `9002` (UDP, Everyone)
+
+Tracker 2 pitch (in degrees) sent as rudder angle.
+
+```json
+{
+    "rudder_deg": 30.0,
+    "ts": 1710000000.123
+}
+```
