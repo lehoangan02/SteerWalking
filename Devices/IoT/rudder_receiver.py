@@ -2,6 +2,7 @@ import socket
 import json
 import threading
 import sys
+import time
 
 try:
     import msvcrt
@@ -20,6 +21,7 @@ class RudderReceiver:
 
         # protect access to `state`
         self._lock = threading.Lock()
+        self._call_count = 0
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("", port))
@@ -69,4 +71,7 @@ class RudderReceiver:
 
     def get(self):
         with self._lock:
+            self._call_count += 1
+            if self._call_count % 10 == 0:
+                print("Rudder state:", self.state)
             return self.state.copy()

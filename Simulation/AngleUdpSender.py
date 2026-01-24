@@ -25,6 +25,8 @@ class AngleUdpSender:
 
         self.prev_phase = None
         self.prev_time = None
+        self.last_print_time = 0
+        self.print_interval = 0.5  # Print every 0.5 seconds
 
     def step(self):
         _, A1, A2 = self.dm.get()
@@ -55,11 +57,14 @@ class AngleUdpSender:
             "ts": now
         }
 
-        # print payload for debugging
-        try:
-            print("Sending payload:", json.dumps(payload))
-        except Exception:
-            print("Sending payload (unserializable):", payload)
+        # print payload for debugging at reduced rate
+        now_time = time.time()
+        if now_time - self.last_print_time >= self.print_interval:
+            try:
+                print("Sending payload:", json.dumps(payload))
+            except Exception:
+                print("Sending payload (unserializable):", payload)
+            self.last_print_time = now_time
 
         self.sock.sendto(
             json.dumps(payload).encode("utf-8"),
