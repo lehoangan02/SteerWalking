@@ -644,7 +644,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ea35b84edaf9954cb2d0c126808617b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
-  speed: 2
+  speed: 0.5
   climbSmoothing: 5
   velocity: {x: 0, y: 0, z: 1}
   stepHeight: 0.5
@@ -728,7 +728,7 @@ MonoBehaviour:
   movement: {fileID: 733367224}
   legs: {fileID: 733367226}
   udp: {fileID: 1279990482}
-  walkSpeed: 2
+  walkSpeed: 0.5
   globalStepHeight: 0.5
   rotationSpeed: 100
   strideLength: 0.2
