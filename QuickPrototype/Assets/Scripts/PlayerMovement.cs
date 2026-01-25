@@ -28,16 +28,27 @@ public class PlayerMovement : MonoBehaviour
     {
         if (moveDir.magnitude < 0.01f || smoothYOffset > 0.05f) return;
 
-        // Feet Ray
+        // 1. Foot Ray (Bottom) - Checks if we hit a wall/step base
         Ray lowerRay = new Ray(transform.position + Vector3.up * 0.1f, moveDir);
-        // Knee Ray
+        
+        // 2. Knee Ray (Middle) - NEW: Checks if the object is solid/tall enough
+        // We check slightly below the full step height (e.g. 50%)
+        Ray kneeRay = new Ray(transform.position + Vector3.up * (stepHeight * 0.5f), moveDir);
+
+        // 3. Clearance Ray (Top) - Checks if there is empty space to step ONTO
         Ray upperRay = new Ray(transform.position + Vector3.up * (stepHeight + 0.1f), moveDir);
 
+        // LOGIC: 
+        // We must hit the Foot (1) AND the Knee (2)
+        // But we must NOT hit the Top (3)
         if (Physics.Raycast(lowerRay, stepCheckDistance, groundMask))
         {
-            if (!Physics.Raycast(upperRay, stepCheckDistance + 0.1f, groundMask))
+            if (Physics.Raycast(kneeRay, stepCheckDistance, groundMask))
             {
-                smoothYOffset += stepHeight;
+                if (!Physics.Raycast(upperRay, stepCheckDistance + 0.1f, groundMask))
+                {
+                    smoothYOffset += stepHeight;
+                }
             }
         }
     }
@@ -63,14 +74,17 @@ public class PlayerMovement : MonoBehaviour
             }
         }
     }
+
     void Move(Vector3 offset)
     {
         transform.position += offset;
     }
+
     public void Rotate(float angle)
     {
-        transform.Rotate(0, -angle, 0);
+        transform.Rotate(0, angle, 0); // Removed negative sign to match standard Unity rotation
     }
+
     void TrackerMovementControl()
     {
         Vector3 targetMove = transform.TransformDirection(velocity) * speed;
@@ -102,7 +116,7 @@ public class PlayerMovement : MonoBehaviour
 
         // Project movement on slopes
         Ray ray = new Ray(transform.position + Vector3.up * 0.2f, Vector3.down);
-        if (Physics.Raycast(ray, out RaycastHit hit, 2.0f, groundMask)) // Increased ray length slightly
+        if (Physics.Raycast(ray, out RaycastHit hit, 2.0f, groundMask)) 
         {
             targetMove = Vector3.ProjectOnPlane(targetMove, hit.normal);
         }
@@ -112,12 +126,30 @@ public class PlayerMovement : MonoBehaviour
         // clear velocity after applying
         velocity = Vector3.zero;
     }
+
     public void AddVelocity(Vector3 addVel)
     {
         velocity += addVel;
     }
+
     public Vector3 GetVelocity()
     {
         return velocity;
+    }
+
+    // Optional: Draw Rays in Scene View to see them
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        // Draw Foot Ray
+        Gizmos.DrawRay(transform.position + Vector3.up * 0.1f, transform.forward * stepCheckDistance);
+        
+        Gizmos.color = Color.yellow;
+        // Draw Knee Ray
+        Gizmos.DrawRay(transform.position + Vector3.up * (stepHeight * 0.5f), transform.forward * stepCheckDistance);
+
+        Gizmos.color = Color.green;
+        // Draw Clearance Ray
+        Gizmos.DrawRay(transform.position + Vector3.up * (stepHeight + 0.1f), transform.forward * (stepCheckDistance + 0.1f));
     }
 }

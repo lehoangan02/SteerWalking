@@ -17,11 +17,11 @@ public class KeyboardControl : MonoBehaviour
 
     void KeyBoardMovementControl()
     {
-        if (Keyboard.current.eKey.isPressed)
+        if (Keyboard.current.aKey.isPressed)
         {
             master.Turn(1f);
         }
-        if (Keyboard.current.qKey.isPressed)
+        if (Keyboard.current.dKey.isPressed)
         {
             master.Turn(-1f);
         }
