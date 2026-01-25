@@ -4,7 +4,7 @@ import socket
 import json
 
 UDP_IP = "255.255.255.255"
-UDP_PORT = 5067
+UDP_PORT = 6001
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)

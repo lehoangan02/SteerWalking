@@ -13,7 +13,7 @@ DEGREES_PER_STATE = 24
 
 
 class RotaryEncoderReceiver:
-    def __init__(self, port=5067):
+    def __init__(self, port=6001):
         self.state = {
             "rotate": 0.0,
             "button": 0
