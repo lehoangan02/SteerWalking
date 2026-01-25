@@ -20,205 +20,203 @@ def label_at_point(ax, text_obj, p, dx=6, dy=6):
     x_final, y_final = inv.transform((x_disp, y_disp))
     text_obj.set_position((x_final, y_final))
 
-# Args: choose mode and IP/port routing
-parser = argparse.ArgumentParser(description="Cycle 3D simulator with Hai mode")
-parser.add_argument(
-    "--mode",
-    choices=["normal", "hai"],
-    default="normal",
-    help="normal: current behavior; hai: send positions compatible with Hai's pipeline",
-)
-parser.add_argument(
-    "--ip",
-    default="127.0.0.1",
-    help="Destination IP for UDP messages",
-)
-parser.add_argument(
-    "--port",
-    type=int,
-    help="Override destination UDP port (defaults: normal=9001, hai=9000)",
-)
-args = parser.parse_args()
+class Cycle3DSimulator:
+    def __init__(self, udp_ip: str = "127.0.0.1", udp_port: int = 9000):
+        self.UDP_IP = udp_ip
+        self.UDP_PORT = udp_port
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-MODE = args.mode
-UDP_IP = args.ip
-UDP_PORT = args.port if args.port is not None else (9001 if MODE == "normal" else 9000)
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection='3d')
 
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
+        self.ax.set_xlim(-3, 3)
+        self.ax.set_ylim(-3, 3)
+        self.ax.set_zlim(-3, 3)
+        self.ax.set_box_aspect([1, 1, 1])
+        self.ax.grid(True)
 
-ax.set_xlim(-3, 3)
-ax.set_ylim(-3, 3)
-ax.set_zlim(-3, 3)
-ax.set_box_aspect([1, 1, 1])
-ax.grid(True)
+        self.ax.set_xlabel('X')
+        self.ax.set_ylabel('Z')
+        self.ax.set_zlabel('Y (vertical)')
 
-ax.set_xlabel('X')
-ax.set_ylabel('Z')
-ax.set_zlabel('Y (vertical)')
+        self.base_O1 = np.array([0.0, 0.0, 1.0])
+        self.base_O2 = np.array([0.0, 0.0, -1.0])
 
-base_O1 = np.array([0.0, 0.0, 1.0])
-base_O2 = np.array([0.0, 0.0, -1.0])
+        self.rotation_y = 0.0
+        self.circle_angle = 0.0
+        self.last_rotation_y = 0.0
+        self.last_time = time.time()
 
-rotation_y = 0.0
-circle_angle = 0.0
-STEP = 0.02
-RADIUS = 1.0
+        self.cycle_speed = 0.1  # radians per frame step (can go negative for reverse)
+        self.cycle_speed_step = 0.02  # additive step for up/down keys
 
-def rot_y(theta):
-    c = np.cos(theta)
-    s = np.sin(theta)
-    return np.array([
-        [ c, 0, s],
-        [ 0, 1, 0],
-        [-s, 0, c]
-    ])
+        self.STEP = 0.02
+        self.RADIUS = 1.0
 
-O_dot,  = ax.plot([], [], [], 'ko', markersize=5)
-O1_dot, = ax.plot([], [], [], 'ro', markersize=6)
-O2_dot, = ax.plot([], [], [], 'bo', markersize=6)
-A1_dot, = ax.plot([], [], [], 'r*', markersize=10)
-A2_dot, = ax.plot([], [], [], 'b*', markersize=10)
-link_line, = ax.plot([], [], [], 'k-')
-circle1_line, = ax.plot([], [], [], 'r--', linewidth=1)
-circle2_line, = ax.plot([], [], [], 'b--', linewidth=1)
+        self.theta = np.linspace(0, 2*np.pi, 120)
+        self.unit_circle = np.stack([
+            np.cos(self.theta),
+            np.sin(self.theta),
+            np.zeros_like(self.theta)
+        ], axis=1)
 
-A1_label = ax.text2D(0, 0, "A1", color="red", fontsize=9, weight="bold")
-A2_label = ax.text2D(0, 0, "A2", color="blue", fontsize=9, weight="bold")
+        self.O_dot,  = self.ax.plot([], [], [], 'ko', markersize=5)
+        self.O1_dot, = self.ax.plot([], [], [], 'ro', markersize=6)
+        self.O2_dot, = self.ax.plot([], [], [], 'bo', markersize=6)
+        self.A1_dot, = self.ax.plot([], [], [], 'r*', markersize=10)
+        self.A2_dot, = self.ax.plot([], [], [], 'b*', markersize=10)
+        self.link_line, = self.ax.plot([], [], [], 'k-')
+        self.circle1_line, = self.ax.plot([], [], [], 'r--', linewidth=1)
+        self.circle2_line, = self.ax.plot([], [], [], 'b--', linewidth=1)
 
-coord_text = ax.text2D(
-    0.02, 0.98, "",
-    transform=ax.transAxes,
-    va="top",
-    ha="left",
-    fontsize=9,
-    family="monospace"
-)
+        self.A1_label = self.ax.text2D(0, 0, "A1", color="red", fontsize=9, weight="bold")
+        self.A2_label = self.ax.text2D(0, 0, "A2", color="blue", fontsize=9, weight="bold")
 
-theta = np.linspace(0, 2*np.pi, 120)
-unit_circle = np.stack([
-    np.cos(theta),
-    np.sin(theta),
-    np.zeros_like(theta)
-], axis=1)
+        self.coord_text = self.ax.text2D(
+            0.02, 0.98, "",
+            transform=self.ax.transAxes,
+            va="top",
+            ha="left",
+            fontsize=9,
+            family="monospace"
+        )
 
-def send_udp(A1, A2, rudder_deg):
-    payload = {
-        "A1": {"x": float(A1[0]), "y": float(A1[1]), "z": float(A1[2])},
-        "A2": {"x": float(A2[0]), "y": float(A2[1]), "z": float(A2[2])},
-        "rudder_deg": float(rudder_deg)
-    }
-    sock.sendto(json.dumps(payload).encode("utf-8"), (UDP_IP, UDP_PORT))
+        self.fig.canvas.mpl_connect('key_press_event', self.on_key)
+        self.ani = FuncAnimation(self.fig, self.update, interval=30)
 
-def send_udp_hai_point(P):
-    msg = {
-        # Hai's client defaults to type="pos" if absent
-        "x": float(P[0]),
-        "y": float(P[1]),
-        "z": float(P[2]),
-        "ts": time.time(),
-    }
-    sock.sendto(json.dumps(msg).encode("utf-8"), (UDP_IP, UDP_PORT))
+    def rot_y(self, theta):
+        c = np.cos(theta)
+        s = np.sin(theta)
+        return np.array([
+            [ c, 0, s],
+            [ 0, 1, 0],
+            [-s, 0, c]
+        ])
 
-def update(frame):
-    global circle_angle
+    def send_udp_angle(self, angle_deg, angular_velocity_deg_s, rudder_deg):
+        payload = {
+            "angle_deg": float(angle_deg),
+            "angular_velocity": float(angular_velocity_deg_s),
+            "rudder_deg": float(rudder_deg),
+            "ts": time.time(),
+        }
+        self.sock.sendto(json.dumps(payload).encode("utf-8"), (self.UDP_IP, self.UDP_PORT))
 
-    R = rot_y(rotation_y)
+    def update(self, frame):
+        now = time.time()
+        dt = max(now - self.last_time, 1e-6)
 
-    O = np.array([0.0, 0.0, 0.0])
-    O1 = R @ base_O1
-    O2 = R @ base_O2
+        R = self.rot_y(self.rotation_y)
 
-    circle_angle += 0.1
+        O = np.array([0.0, 0.0, 0.0])
+        O1 = R @ self.base_O1
+        O2 = R @ self.base_O2
 
-    phase1 = circle_angle % (2*np.pi)
-    phase2 = (circle_angle + np.pi) % (2*np.pi)
+        self.circle_angle += self.cycle_speed
 
-    a1_local = RADIUS * np.array([
-        np.cos(circle_angle),
-        np.sin(circle_angle),
-        0.0
-    ])
+        phase1 = self.circle_angle % (2*np.pi)
+        phase2 = (self.circle_angle + np.pi) % (2*np.pi)
 
-    a2_local = RADIUS * np.array([
-        np.cos(circle_angle + np.pi),
-        np.sin(circle_angle + np.pi),
-        0.0
-    ])
+        a1_local = self.RADIUS * np.array([
+            np.cos(self.circle_angle),
+            np.sin(self.circle_angle),
+            0.0
+        ])
 
-    A1 = O1 + R @ a1_local
-    A2 = O2 + R @ a2_local
+        a2_local = self.RADIUS * np.array([
+            np.cos(self.circle_angle + np.pi),
+            np.sin(self.circle_angle + np.pi),
+            0.0
+        ])
 
-    if MODE == "hai":
-        # Stream positions compatible with Hai's receiver (port 9000 by default).
-        # Send both points so his viewer can show two trackers.
-        send_udp_hai_point(A1)
-        send_udp_hai_point(A2)
-    else:
-        # Original payload for the normal mode.
-        send_udp(A1, A2, np.degrees(rotation_y))
+        A1 = O1 + R @ a1_local
+        A2 = O2 + R @ a2_local
 
-    circle1 = O1 + (unit_circle @ R.T) * RADIUS
-    circle2 = O2 + (unit_circle @ R.T) * RADIUS
+        # Compute rudder and angular velocity (deg and deg/s)
+        rudder_deg = np.degrees(self.rotation_y)
+        angular_velocity = np.degrees((self.rotation_y - self.last_rotation_y) / dt)
+        self.last_rotation_y = self.rotation_y
+        self.last_time = now
 
-    for dot, p in [
-        (O_dot,  O),
-        (O1_dot, O1),
-        (O2_dot, O2),
-        (A1_dot, A1),
-        (A2_dot, A2),
-    ]:
-        x, y, z = to_plot(p)
-        dot.set_data([x], [y])
-        dot.set_3d_properties([z])
+        # Send combined payload to localhost
+        self.send_udp_angle(
+            angle_deg=rudder_deg,
+            angular_velocity_deg_s=angular_velocity,
+            rudder_deg=rudder_deg,
+        )
 
-    x1, y1, z1 = to_plot(O1)
-    x2, y2, z2 = to_plot(O2)
-    link_line.set_data([x1, x2], [y1, y2])
-    link_line.set_3d_properties([z1, z2])
+        circle1 = O1 + (self.unit_circle @ R.T) * self.RADIUS
+        circle2 = O2 + (self.unit_circle @ R.T) * self.RADIUS
 
-    cx, cy, cz = zip(*[to_plot(p) for p in circle1])
-    circle1_line.set_data(cx, cy)
-    circle1_line.set_3d_properties(cz)
+        for dot, p in [
+            (self.O_dot,  O),
+            (self.O1_dot, O1),
+            (self.O2_dot, O2),
+            (self.A1_dot, A1),
+            (self.A2_dot, A2),
+        ]:
+            x, y, z = to_plot(p)
+            dot.set_data([x], [y])
+            dot.set_3d_properties([z])
 
-    cx, cy, cz = zip(*[to_plot(p) for p in circle2])
-    circle2_line.set_data(cx, cy)
-    circle2_line.set_3d_properties(cz)
+        x1, y1, z1 = to_plot(O1)
+        x2, y2, z2 = to_plot(O2)
+        self.link_line.set_data([x1, x2], [y1, y2])
+        self.link_line.set_3d_properties([z1, z2])
 
-    label_at_point(ax, A1_label, A1)
-    label_at_point(ax, A2_label, A2)
+        cx, cy, cz = zip(*[to_plot(p) for p in circle1])
+        self.circle1_line.set_data(cx, cy)
+        self.circle1_line.set_3d_properties(cz)
 
-    coord_text.set_text(
-        f"O  = ({O[0]: .2f}, {O[1]: .2f}, {O[2]: .2f})\n"
-        f"O1 = ({O1[0]: .2f}, {O1[1]: .2f}, {O1[2]: .2f})\n"
-        f"O2 = ({O2[0]: .2f}, {O2[1]: .2f}, {O2[2]: .2f})\n"
-        f"A1 = ({A1[0]: .2f}, {A1[1]: .2f}, {A1[2]: .2f})\n"
-        f"A2 = ({A2[0]: .2f}, {A2[1]: .2f}, {A2[2]: .2f})\n\n"
-        f"Rudder = {rotation_y: .3f} rad ({np.degrees(rotation_y): .1f}°)\n"
-        f"Phase A1 = {phase1: .3f} rad ({np.degrees(phase1): .1f}°)\n"
-        f"Phase A2 = {phase2: .3f} rad ({np.degrees(phase2): .1f}°)"
-    )
+        cx, cy, cz = zip(*[to_plot(p) for p in circle2])
+        self.circle2_line.set_data(cx, cy)
+        self.circle2_line.set_3d_properties(cz)
 
-    # print(
-    #     f"A1 rotation phase: {np.degrees(phase1):.3f} deg\n"
-    #     f"A1 Position: ({A1[0]:.6f}, {A1[1]:.6f}, {A1[2]:.6f})"
-    # )
+        label_at_point(self.ax, self.A1_label, A1)
+        label_at_point(self.ax, self.A2_label, A2)
 
-    return (
-        O_dot, O1_dot, O2_dot, A1_dot, A2_dot,
-        link_line, circle1_line, circle2_line,
-        A1_label, A2_label, coord_text
-    )
+        self.coord_text.set_text(
+            f"O  = ({O[0]: .2f}, {O[1]: .2f}, {O[2]: .2f})\n"
+            f"O1 = ({O1[0]: .2f}, {O1[1]: .2f}, {O1[2]: .2f})\n"
+            f"O2 = ({O2[0]: .2f}, {O2[1]: .2f}, {O2[2]: .2f})\n"
+            f"A1 = ({A1[0]: .2f}, {A1[1]: .2f}, {A1[2]: .2f})\n"
+            f"A2 = ({A2[0]: .2f}, {A2[1]: .2f}, {A2[2]: .2f})\n\n"
+            f"Rudder = {self.rotation_y: .3f} rad ({rudder_deg: .1f}°)\n"
+            f"Phase A1 = {phase1: .3f} rad ({np.degrees(phase1): .1f}°)\n"
+            f"Phase A2 = {phase2: .3f} rad ({np.degrees(phase2): .1f}°)\n"
+            f"Angular vel = {angular_velocity: .2f} deg/s\n"
+            f"Cycle speed = {self.cycle_speed: .3f} rad/step"
+        )
 
-def on_key(event):
-    global rotation_y
-    if event.key == 'left':
-        rotation_y -= STEP
-    if event.key == 'right':
-        rotation_y += STEP
+        return (
+            self.O_dot, self.O1_dot, self.O2_dot, self.A1_dot, self.A2_dot,
+            self.link_line, self.circle1_line, self.circle2_line,
+            self.A1_label, self.A2_label, self.coord_text
+        )
 
-fig.canvas.mpl_connect('key_press_event', on_key)
+    def on_key(self, event):
+        if event.key == 'left':
+            self.rotation_y -= self.STEP
+        if event.key == 'right':
+            self.rotation_y += self.STEP
+        if event.key == 'up':
+            self.cycle_speed += self.cycle_speed_step
+        if event.key == 'down':
+            self.cycle_speed -= self.cycle_speed_step
 
-ani = FuncAnimation(fig, update, interval=30)
-plt.show()
+    def run(self):
+        plt.show()
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Cycle 3D simulator (UDP angle/rudder sender)")
+    parser.add_argument("--ip", default="127.0.0.1", help="Destination IP for UDP messages")
+    parser.add_argument("--port", type=int, default=9000, help="Destination UDP port (default 9000)")
+    args = parser.parse_args()
+
+    app = Cycle3DSimulator(udp_ip=args.ip, udp_port=args.port)
+    app.run()
+
+
+if __name__ == "__main__":
+    main()
