@@ -18,7 +18,6 @@ class MagneticEncoderReceiver:
 
         # protect access to `state`
         self._lock = threading.Lock()
-        self._call_count = 0
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(("", port))
@@ -41,6 +40,7 @@ class MagneticEncoderReceiver:
 
                 with self._lock:
                     self.state["angle_deg"] = angle_deg
+                    print("Magnetic encoder state:", self.state)
 
     def _keyboard_listener(self):
         # simple Windows console keylistener: q -> left, e -> right
@@ -66,9 +66,6 @@ class MagneticEncoderReceiver:
 
     def get(self):
         with self._lock:
-            self._call_count += 1
-            if self._call_count % 10 == 0:
-                print("Magnetic encoder state:", self.state)
             return self.state.copy()
 
 
