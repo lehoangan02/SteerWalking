@@ -45,7 +45,7 @@ class RotaryEncoderReceiver:
                 with self._lock:
                     self.state["rotate"] = raw_state * DEGREES_PER_STATE
                     self.state["button"] = msg.get("button", 0)
-                    print("Rudder state:", self.state)
+                    # print("Rudder state:", self.state)
 
     def _keyboard_listener(self):
         # simple Windows console keylistener: q -> left, e -> right
@@ -72,3 +72,16 @@ class RotaryEncoderReceiver:
     def get(self):
         with self._lock:
             return self.state.copy()
+
+
+if __name__ == "__main__":
+    print("Starting Rotary Encoder Receiver on port 6001...")
+    receiver = RotaryEncoderReceiver(port=6001)
+    
+    try:
+        while True:
+            state = receiver.get()
+            print(f"Rotate: {state['rotate']:.2f}°, Button: {state['button']}")
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        print("\nShutdown")
