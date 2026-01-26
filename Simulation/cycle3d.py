@@ -134,13 +134,14 @@ class Cycle3DSimulator:
 
         # Compute rudder angle and cycle angular velocity in degrees
         rudder_deg = np.degrees(self.rotation_y)
+        phase1_deg = np.degrees(phase1)
         cycle_speed_deg_step = np.degrees(self.cycle_speed)
         angular_velocity_deg_s = cycle_speed_deg_step / self.frame_interval_s
         self.last_time = now
 
         # Send combined payload to localhost
         self.send_udp_angle(
-            angle_deg=rudder_deg,
+            angle_deg=phase1_deg,
             angular_velocity_deg_s=angular_velocity_deg_s,
             rudder_deg=rudder_deg,
         )
