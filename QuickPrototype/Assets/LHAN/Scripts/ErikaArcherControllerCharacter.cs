@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -32,8 +33,7 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     }
     public void Rotate(float angle)
     {
-        transform.Rotate(Vector3.up * angle * 120f * Time.deltaTime);
-        print("Rotate: " + angle);
+        transform.Rotate(Vector3.up * angle * 180f * Time.deltaTime);
     }
     private void HandleMovementRequest()
     {
@@ -51,8 +51,10 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         Up,
         Down
     }
-    [SerializeField] private GameObject StepRayUpper;
-    [SerializeField] private GameObject StepRayLower;
+    [SerializeField] private GameObject UpStairStepRayUpper;
+    [SerializeField] private GameObject UpStairStepRayLower;
+    [SerializeField] private GameObject DownStairStepRayUpper;
+    [SerializeField] private GameObject DownStairStepRayLower;
     [SerializeField] private GameObject DebugSphere;
     private bool IsMovingForward()
     {
@@ -63,33 +65,64 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     {
         if (!IsMovingForward()) return;
         RaycastHit hitLower;
-        if (Physics.Raycast(StepRayLower.transform.position, transform.forward, out hitLower, 0.4f))
+        if (Physics.Raycast(UpStairStepRayLower.transform.position, transform.forward, out hitLower, 0.4f))
         {
             Debug.Log("Hit Lower Step: " + hitLower.collider.name);
-            if (!Physics.Raycast(StepRayUpper.transform.position, transform.forward, 0.6f))
+            if (!Physics.Raycast(UpStairStepRayUpper.transform.position, transform.forward, 0.6f))
             {
-                Debug.Log("No Hit Upper Step, Up Stair Detected");
+                Debug.Log("Not Hit Upper Step, Up Stair Detected");
                 TimeSinceLastClimbUp = 0f;
                 IsClimbingUp = true;
+                IsClimbingDown = false;
+            }
+        }
+    }
+    private void DescendStairs()
+    {
+        if (!IsMovingForward()) return;
+        RaycastHit hitLower;
+        if (Physics.Raycast(DownStairStepRayLower.transform.position, -transform.up, out hitLower, 0.4f))
+        {
+            // Debug.Log("Hit Lower Step: " + hitLower.collider.name);
+            if (!Physics.Raycast(DownStairStepRayUpper.transform.position, -transform.up, 0.6f))
+            {
+                // Debug.Log("Not Hit Upper Step, Down Stair Detected");
+                TimeSinceLastClimbDown = 0f;
+                IsClimbingDown = true;
+                IsClimbingUp = false;
             }
         }
     }
     private void HandleStair()
     {
-        TimeSinceLastClimbUp += Time.deltaTime;
-        
         ClimbStairs();
+        DescendStairs();
+        TimeSinceLastClimbUp += Time.deltaTime;
+        TimeSinceLastClimbDown += Time.deltaTime;
+        
+        
         const float climbUpCooldown = 0.7f;
         if (TimeSinceLastClimbUp > climbUpCooldown)
         {
             IsClimbingUp = false;
             animator.SetBool("isClimbingUp", false);
             SetStairStatusMaterial(StairStatus.Level);
+            if (TimeSinceLastClimbDown > climbUpCooldown)
+            {
+                IsClimbingDown = false;
+                animator.SetBool("isClimbingDown", false);
+                SetStairStatusMaterial(StairStatus.Level);
+            } else
+            {
+                animator.SetBool("isClimbingDown", true);
+                SetStairStatusMaterial(StairStatus.Down);
+            }
         } else
         {
             animator.SetBool("isClimbingUp", true);
             SetStairStatusMaterial(StairStatus.Up);
         }
+        
     }
     private void SetStairStatusMaterial(StairStatus status)
     {
@@ -98,7 +131,9 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         renderer.material = stairStatusMaterials[(int)status];
     }
     private bool IsClimbingUp = false;
+    private bool IsClimbingDown = false;
     private float TimeSinceLastClimbUp = 0f;
+    private float TimeSinceLastClimbDown = 0f;
     private float verticalVelocity = 0f;
     private const float gravity = -9.81f * 0.05f;
     private void ApplyGravity()
