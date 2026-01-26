@@ -2,26 +2,23 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class ErikaArcherController : MonoBehaviour
+public class ErikaArcherControllerCharacter : MonoBehaviour
 {
     private Animator animator;
-    private Rigidbody rb;
     Vector3 movement;
+    private CharacterController characterController;
     void Start()
     {
         animator = GetComponent<Animator>();
-        rb = GetComponent<Rigidbody>();
         movement = Vector3.zero;
         SetStairStatusMaterial(StairStatus.Level);
-        TargetY = rb.position.y;
+        characterController = GetComponent<CharacterController>();
     }
-
-    // Update is called once per frame
     void Update()
     {
         HandleStair();
         HandleMovementRequest();
-        
+        ApplyGravity();
     }
     public void MoveForward(float value)
     {
@@ -35,12 +32,13 @@ public class ErikaArcherController : MonoBehaviour
     }
     public void Rotate(float angle)
     {
-        rb.MoveRotation(rb.rotation * Quaternion.Euler(Vector3.up * angle));
+        transform.Rotate(Vector3.up * angle * 120f * Time.deltaTime);
+        print("Rotate: " + angle);
     }
     private void HandleMovementRequest()
     {
         const float speedRatio = 1f;
-        rb.MovePosition(rb.position + movement * Time.deltaTime * speedRatio);
+        characterController.Move(movement * Time.deltaTime * speedRatio);
         float forwardSpeed = Vector3.Dot(movement * speedRatio, transform.forward);
         // Debug.Log("forwardSpeed: " + forwardSpeed);
         animator.SetFloat("forwardSpeed", forwardSpeed);
@@ -53,8 +51,6 @@ public class ErikaArcherController : MonoBehaviour
         Up,
         Down
     }
-    [SerializeField] private float StepHeight = 2f;
-    [SerializeField] private float StepDepth = 0.3f;
     [SerializeField] private GameObject StepRayUpper;
     [SerializeField] private GameObject StepRayLower;
     [SerializeField] private GameObject DebugSphere;
@@ -63,7 +59,6 @@ public class ErikaArcherController : MonoBehaviour
         float forwardSpeed = animator.GetFloat("forwardSpeed");
         return forwardSpeed > 0.2f;
     }
-    private float TargetY;
     private void ClimbStairs()
     {
         if (!IsMovingForward()) return;
@@ -73,14 +68,7 @@ public class ErikaArcherController : MonoBehaviour
             Debug.Log("Hit Lower Step: " + hitLower.collider.name);
             if (!Physics.Raycast(StepRayUpper.transform.position, transform.forward, 0.6f))
             {
-                Debug.Log("No Hit Upper Step, Climbing Up");
-                Vector3 newPosition = rb.position;
-                TargetY = newPosition.y + StepHeight;
-                newPosition.y += StepHeight;
-                
-                // move forward a bit to avoid getting stuck
-                newPosition += transform.forward * StepDepth * 0.8f * Time.deltaTime;
-                rb.MovePosition(newPosition);
+                Debug.Log("No Hit Upper Step, Up Stair Detected");
                 TimeSinceLastClimbUp = 0f;
                 IsClimbingUp = true;
             }
@@ -111,4 +99,18 @@ public class ErikaArcherController : MonoBehaviour
     }
     private bool IsClimbingUp = false;
     private float TimeSinceLastClimbUp = 0f;
+    private float verticalVelocity = 0f;
+    private const float gravity = -9.81f * 0.05f;
+    private void ApplyGravity()
+    {
+        if (characterController.isGrounded && verticalVelocity < 0)
+            verticalVelocity = gravity;
+
+        verticalVelocity += Physics.gravity.y * Time.deltaTime;
+
+        Vector3 move = movement;
+        move.y = verticalVelocity;
+
+        characterController.Move(move * Time.deltaTime);
+    }
 }

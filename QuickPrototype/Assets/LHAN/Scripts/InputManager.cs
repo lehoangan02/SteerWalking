@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 public class InputManager : MonoBehaviour
 {
-    [SerializeField] private ErikaArcherController erikaArcherController;
+    [SerializeField] private ErikaArcherControllerCharacter erikaArcherController;
     public static InputManager Instance { get; private set; }
     void Awake()
     {
