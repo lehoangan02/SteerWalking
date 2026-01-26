@@ -53,6 +53,7 @@ public class ErikaArcherController : MonoBehaviour
         Down
     }
     [SerializeField] private float StepHeight = 0.45f;
+    [SerializeField] private float StepDepth = 0.3f;
     [SerializeField] private GameObject StepRayUpper;
     [SerializeField] private GameObject StepRayLower;
     [SerializeField] private GameObject DebugSphere;
@@ -73,6 +74,8 @@ public class ErikaArcherController : MonoBehaviour
                 Debug.Log("No Hit Upper Step, Climbing Up");
                 Vector3 newPosition = rb.position;
                 newPosition.y += StepHeight;
+                // move forward a bit to avoid getting stuck
+                newPosition += transform.forward * StepDepth;
                 rb.MovePosition(newPosition);
                 TimeSinceLastClimbUp = 0f;
                 IsClimbingUp = true;
