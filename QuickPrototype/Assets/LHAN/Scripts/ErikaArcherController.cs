@@ -18,8 +18,9 @@ public class ErikaArcherController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        HandleMovementRequest();
         HandleStair();
+        HandleMovementRequest();
+        
     }
     public void MoveForward(float value)
     {
@@ -52,7 +53,6 @@ public class ErikaArcherController : MonoBehaviour
         Down
     }
     [SerializeField] private float StepHeight = 0.45f;
-    [SerializeField] private float StepSmooth = 0.2f;
     [SerializeField] private GameObject StepRayUpper;
     [SerializeField] private GameObject StepRayLower;
     [SerializeField] private GameObject DebugSphere;
@@ -72,7 +72,7 @@ public class ErikaArcherController : MonoBehaviour
             {
                 Debug.Log("No Hit Upper Step, Climbing Up");
                 Vector3 newPosition = rb.position;
-                newPosition.y += StepSmooth;
+                newPosition.y += StepHeight;
                 rb.MovePosition(newPosition);
                 TimeSinceLastClimbUp = 0f;
                 IsClimbingUp = true;
