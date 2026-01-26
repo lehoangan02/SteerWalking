@@ -6,24 +6,27 @@ using System.Threading;
 using UnityEngine;
 using TMPro;
 
-// We only define the NEW class specific to the Python sim.
-// The standard 'TrackerPayload' and 'TrackerData' are already in your other file.
 [Serializable]
 public class PythonSimPayload
 {
     public float angle_deg;
     public float angular_velocity;
+    public float rudder_deg; 
     public double ts;
 }
 
 public class UDP_SimulatedReceiver : MonoBehaviour
 {
+    [Header("Dependencies")]
+    [Tooltip("Drag the main Player object here so feet follow the body")]
+    public Transform playerTransform;
+
     [Header("UDP Config")]
-    [SerializeField] private int port = 9000; // Matches Python default
+    [SerializeField] private int port = 9000;
 
     [Header("Simulation Settings")]
-    [SerializeField] private float radius = 2.0f; // Radius of the circle in Unity meters
-    [SerializeField] private float height = 1.0f; // Height off the floor
+    [SerializeField] private float radius = 0.3f; // Leg spread (0.3m is realistic)
+    [SerializeField] private float height = 0.1f;
 
     [Header("UI")]
     [SerializeField] private TextMeshProUGUI statusText;
@@ -31,32 +34,28 @@ public class UDP_SimulatedReceiver : MonoBehaviour
     private UdpClient udpClient;
     private Thread thread;
     private bool running;
-
     private readonly object dataLock = new object();
-    private TrackerPayload latestPayload; 
-
-    #region UNITY
+    
+    private PythonSimPayload latestSimData; 
+    private TrackerPayload latestTrackerPayload;
 
     void Start()
     {
-        // Initialize with a dummy payload so it's never null
-        latestPayload = new TrackerPayload { trackers = new TrackerData[0] };
+        if (playerTransform == null) playerTransform = transform;
+        latestTrackerPayload = new TrackerPayload { trackers = new TrackerData[0] };
+        latestSimData = new PythonSimPayload(); 
 
         try
         {
             udpClient = new UdpClient(port);
             udpClient.EnableBroadcast = true;
-            
             running = true;
             thread = new Thread(ReceiveLoop) { IsBackground = true };
             thread.Start();
-
-            SetText($"Listening for Python Sim on Port {port}...");
         }
         catch (Exception e)
         {
             Debug.LogError($"UDP Start Error: {e.Message}");
-            SetText("Error binding port " + port);
         }
     }
 
@@ -64,140 +63,89 @@ public class UDP_SimulatedReceiver : MonoBehaviour
     {
         lock (dataLock)
         {
-            if (latestPayload != null && latestPayload.trackers != null && latestPayload.trackers.Length > 0)
-                DisplayPayload(latestPayload);
+            if (latestSimData != null) DisplayPayload(latestSimData);
         }
     }
 
     void OnApplicationQuit()
     {
         running = false;
-        try { udpClient?.Close(); } catch { }
-        try { thread?.Join(200); } catch { }
+        udpClient?.Close();
+        thread?.Join(200);
     }
-
-    #endregion
-
-    #region UDP_LOGIC
 
     void ReceiveLoop()
     {
         IPEndPoint ep = new IPEndPoint(IPAddress.Any, port);
-
         while (running)
         {
             try
             {
                 byte[] data = udpClient.Receive(ref ep);
                 string json = Encoding.UTF8.GetString(data);
-
-                // 1. Parse the SIMPLE Python JSON
                 var simData = JsonUtility.FromJson<PythonSimPayload>(json);
 
                 if (simData != null)
                 {
-                    // 2. CONVERT Sim Data -> Full Tracker Data
-                    TrackerPayload convertedPayload = ConvertSimToTracker(simData);
-
+                    TrackerPayload converted = ConvertSimToTracker(simData);
                     lock (dataLock)
                     {
-                        latestPayload = convertedPayload;
+                        latestSimData = simData;
+                        latestTrackerPayload = converted;
                     }
                 }
             }
-            catch (Exception e)
-            {
-                if (running) Debug.LogWarning("UDP Error: " + e.Message);
-            }
+            catch { /* Handle socket closure */ }
         }
     }
 
     TrackerPayload ConvertSimToTracker(PythonSimPayload sim)
     {
         TrackerPayload payload = new TrackerPayload();
-        payload.type = "python_simulation";
-        payload.time = sim.ts;
         payload.angular_velocity = sim.angular_velocity;
 
-        // Calculate 3D Position from Angle
+        // Calculate LOCAL position (centered at 0,0)
         float rad = sim.angle_deg * Mathf.Deg2Rad;
+        Vector3 localPos = new Vector3(Mathf.Cos(rad) * radius, height, Mathf.Sin(rad) * radius);
 
-        float x = Mathf.Cos(rad) * radius;
-        float z = Mathf.Sin(rad) * radius;
-
-        // Calculate Rotation (Face outward)
-        Quaternion rot = Quaternion.Euler(0, -sim.angle_deg, 0);
-
-        // Create the simulated tracker
         TrackerData t = new TrackerData();
         t.index = 0;
-        t.serial = "SIM_001";
         t.valid = true;
+        t.position = new float[3] { localPos.x, localPos.y, localPos.z };
+        t.rotation = new float[4] { 0, 0, 0, 1 };
         
-        t.position = new float[3] { x, height, z };
-        t.rotation = new float[4] { rot.x, rot.y, rot.z, rot.w };
-
         payload.trackers = new TrackerData[] { t };
-
         return payload;
     }
 
-    #endregion
-
-    #region DISPLAY
-
-    void DisplayPayload(TrackerPayload payload)
-    {
-        if (statusText == null) return;
-
-        StringBuilder sb = new StringBuilder();
-        sb.AppendLine("=== Python Simulation Data ===");
-        sb.AppendLine($"Vel: {payload.angular_velocity:F1} deg/s");
-        
-        if(payload.trackers.Length > 0)
-        {
-            var t = payload.trackers[0];
-            sb.AppendLine($"Pos: ({t.position[0]:F2}, {t.position[2]:F2})");
-            float angle = Mathf.Atan2(t.position[2], t.position[0]) * Mathf.Rad2Deg;
-            sb.AppendLine($"Angle: {angle:F1}°");
-        }
-
-        statusText.text = sb.ToString();
-    }
-
-    void SetText(string text)
-    {
-        if (statusText != null) statusText.text = text;
-    }
-
-    #endregion
-
     #region GETTERS
 
-    public TrackerPayload GetLatestPayload() { lock (dataLock) return latestPayload; }
+    public TrackerPayload GetLatestPayload() { lock (dataLock) return latestTrackerPayload; }
     
-    public Vector3 GetTrackerPosition(string serial = "SIM_001")
+    public float GetRudderAngle() { lock (dataLock) return latestSimData != null ? latestSimData.rudder_deg : 0f; }
+    
+    // THIS FIXES THE CS1061 ERROR
+    public float GetWalkingCycleAngle() { lock (dataLock) return latestSimData != null ? latestSimData.angle_deg : 0f; }
+
+    public Vector3 GetTrackerPosition()
     {
         lock (dataLock)
         {
-            if (latestPayload?.trackers == null || latestPayload.trackers.Length == 0) 
-                return Vector3.zero;
+            if (latestTrackerPayload?.trackers == null || latestTrackerPayload.trackers.Length == 0) 
+                return playerTransform.position;
+
+            var t = latestTrackerPayload.trackers[0];
+            Vector3 localOffset = new Vector3(t.position[0], t.position[1], t.position[2]);
             
-            var t = latestPayload.trackers[0]; 
-            return new Vector3(t.position[0], t.position[1], t.position[2]);
+            // STABILITY FIX: Rotate the walking circle to match player's facing direction
+            return playerTransform.position + (playerTransform.rotation * localOffset);
         }
     }
 
-    public Quaternion GetTrackerRotation(string serial = "SIM_001")
-    {
-        lock (dataLock)
-        {
-            if (latestPayload?.trackers == null || latestPayload.trackers.Length == 0) 
-                return Quaternion.identity;
-
-            var t = latestPayload.trackers[0];
-            return new Quaternion(t.rotation[0], t.rotation[1], t.rotation[2], t.rotation[3]);
-        }
-    }
     #endregion
+
+    void DisplayPayload(PythonSimPayload sim)
+    {
+        if (statusText) statusText.text = $"Rudder: {sim.rudder_deg:F1}°\nPhase: {sim.angle_deg:F0}°";
+    }
 }

@@ -9,14 +9,11 @@ public class SyncLegs : MonoBehaviour
 
     [Header("Sync Settings")]
     public float stepHeight = 0.3f;
-    public float stridePrediction = 0.5f;
+    public float stridePrediction = 0.4f;
 
     [Header("Real Device Calibration")]
-    [Tooltip("Rotates the walking circle. Adjust this until legs look natural.")]
     [Range(0, 360)] public float angleOffset = 0f;
-    
-    [Tooltip("Smoothing factor for the harsh signal. Higher = Smoother.")]
-    public float smoothTime = 10f;
+    public float smoothTime = 15f; // Increased for better stability
 
     [Header("Pose Corrections")]
     public float footOffset = 0.1f;
@@ -24,11 +21,9 @@ public class SyncLegs : MonoBehaviour
     public bool forceArmsDown = true;
     public LayerMask groundLayer;
 
-    // --- EXTERNAL CONTROL ---
     private float externalAngle = -1f; 
     public void UpdateStepPhase(float angle) { externalAngle = angle; }
     public void UseUDPControl() { externalAngle = -1f; }
-    // ------------------------
 
     private Animator animator;
     private Vector3 rFootPos, lFootPos;
@@ -36,7 +31,6 @@ public class SyncLegs : MonoBehaviour
     private Vector3 rKneePos, lKneePos;
     private Vector3 rStepStart, lStepStart;
     
-    // Smoothing state
     private float currentAngle = 0f;
     private bool lastPhaseWasRight = false;
 
@@ -46,52 +40,34 @@ public class SyncLegs : MonoBehaviour
         if (!udpReceiver) udpReceiver = FindObjectOfType<UDP_SimulatedReceiver>();
         if (!playerMovement) playerMovement = GetComponent<PlayerMovement>();
 
-        Vector3 initialR = GetGroundPos(transform.position + transform.right * 0.2f);
-        Vector3 initialL = GetGroundPos(transform.position - transform.right * 0.2f);
-        rFootPos = rStepStart = initialR;
-        lFootPos = lStepStart = initialL;
-        rFootRot = lFootRot = transform.rotation;
+        rFootPos = rStepStart = GetGroundPos(transform.position + transform.right * 0.2f);
+        lFootPos = lStepStart = GetGroundPos(transform.position - transform.right * 0.2f);
     }
 
     void Update()
     {
         float targetAngle = 0;
 
-        // 1. GET RAW INPUT
+        // 1. GET CLEAN ANGLE
         if (externalAngle >= 0)
         {
             targetAngle = externalAngle;
         }
         else if (udpReceiver != null)
         {
-            Vector3 trackerPos = udpReceiver.GetTrackerPosition();
-            if (trackerPos == Vector3.zero) return; // No data yet
-
-            float angleRad = Mathf.Atan2(trackerPos.z, trackerPos.x);
-            targetAngle = angleRad * Mathf.Rad2Deg;
-            if (targetAngle < 0) targetAngle += 360f;
-        }
-        else
-        {
-            return; 
+            // STABILITY FIX: Use the direct angle from the receiver instead of calculating from Position
+            targetAngle = udpReceiver.GetWalkingCycleAngle();
         }
 
-        // 2. APPLY OFFSET (Fixes the "Twisted Legs" look)
+        // 2. APPLY OFFSET AND SMOOTH
         targetAngle = (targetAngle + angleOffset) % 360f;
-
-        // 3. SMOOTHING (Fixes the "Harsh" signal)
-        // LerpAngle handles the 360 -> 0 wrap-around correctly
         currentAngle = Mathf.LerpAngle(currentAngle, targetAngle, Time.deltaTime * smoothTime);
         
-        // Normalize to 0-360 for logic
-        float finalAngle = currentAngle;
-        if (finalAngle < 0) finalAngle += 360f;
-        finalAngle = finalAngle % 360f;
+        float finalAngle = (currentAngle + 360f) % 360f;
 
-        // 4. DETERMINE PHASE
+        // 3. PHASE DETECTION
         bool isRightSwing = (finalAngle >= 0 && finalAngle < 180);
 
-        // 5. DETECT NEW STEP START
         if (isRightSwing != lastPhaseWasRight)
         {
             if (isRightSwing) rStepStart = rFootPos;
@@ -99,65 +75,53 @@ public class SyncLegs : MonoBehaviour
             lastPhaseWasRight = isRightSwing;
         }
 
-        // 6. ANIMATE LEGS
-        float velocityMag = playerMovement ? (playerMovement.speed) : 0f;
-        // Use transform.forward explicitly to ensure we walk in the direction we face
-        Vector3 futurePos = transform.position + (transform.forward * velocityMag * stridePrediction);
+        // 4. PREDICTIVE STEPPING
+        // We use the actual current velocity of the body to place the feet
+        Vector3 currentVel = playerMovement ? playerMovement.GetVelocity() : Vector3.zero;
+        Vector3 futurePos = transform.position + (currentVel * stridePrediction);
 
         if (isRightSwing)
         {
-            float t = finalAngle / 180f; // 0 to 1
+            float t = finalAngle / 180f; 
             float stepArc = Mathf.Sin(t * Mathf.PI);
 
             Vector3 target = GetGroundPos(futurePos + transform.right * 0.2f);
             rFootPos = Vector3.Lerp(rStepStart, target, t);
             rFootPos.y += stepArc * stepHeight;
+            rFootRot = transform.rotation;
             
-            // Align foot rotation to forward
-            rFootRot = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(transform.forward), t);
-            
-            // Plant other foot
-            lFootPos = GetGroundPos(lFootPos); 
+            lFootPos = GetGroundPos(lFootPos); // Keep planted
         }
         else
         {
-            float t = (finalAngle - 180f) / 180f; // 0 to 1
+            float t = (finalAngle - 180f) / 180f;
             float stepArc = Mathf.Sin(t * Mathf.PI);
 
             Vector3 target = GetGroundPos(futurePos - transform.right * 0.2f);
             lFootPos = Vector3.Lerp(lStepStart, target, t);
             lFootPos.y += stepArc * stepHeight;
+            lFootRot = transform.rotation;
 
-            // Align foot rotation to forward
-            lFootRot = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(transform.forward), t);
-            
-            // Plant other foot
-            rFootPos = GetGroundPos(rFootPos);
+            rFootPos = GetGroundPos(rFootPos); // Keep planted
         }
 
-        rKneePos = transform.position + transform.forward + transform.right * 0.2f;
-        lKneePos = transform.position + transform.forward - transform.right * 0.2f;
+        rKneePos = transform.position + transform.forward * 0.5f + transform.right * 0.2f;
+        lKneePos = transform.position + transform.forward * 0.5f - transform.right * 0.2f;
     }
 
-    // --- IK LOGIC (Same as before) ---
     void OnAnimatorIK(int layerIndex)
     {
         if (!animator) return;
-        if (hipHeight != 0) animator.bodyPosition += Vector3.up * hipHeight;
+        animator.bodyPosition += Vector3.up * hipHeight;
         SetFootIK(AvatarIKGoal.RightFoot, rFootPos, rFootRot, rKneePos);
         SetFootIK(AvatarIKGoal.LeftFoot, lFootPos, lFootRot, lKneePos);
         
         if (forceArmsDown)
         {
-            // Simple arm lock
-            animator.SetIKPositionWeight(AvatarIKGoal.RightHand, 0.6f);
-            animator.SetIKRotationWeight(AvatarIKGoal.RightHand, 0.6f);
-            animator.SetIKPosition(AvatarIKGoal.RightHand, transform.position + (transform.right * 0.35f) + (transform.up * 0.9f));
-            animator.SetIKRotation(AvatarIKGoal.RightHand, transform.rotation * Quaternion.Euler(0, 0, -15));
-            animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, 0.6f);
-            animator.SetIKRotationWeight(AvatarIKGoal.LeftHand, 0.6f);
-            animator.SetIKPosition(AvatarIKGoal.LeftHand, transform.position - (transform.right * 0.35f) + (transform.up * 0.9f));
-            animator.SetIKRotation(AvatarIKGoal.LeftHand, transform.rotation * Quaternion.Euler(0, 0, 15));
+            animator.SetIKPositionWeight(AvatarIKGoal.RightHand, 0.5f);
+            animator.SetIKPosition(AvatarIKGoal.RightHand, transform.position + (transform.right * 0.3f) + (transform.up * 1f));
+            animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, 0.5f);
+            animator.SetIKPosition(AvatarIKGoal.LeftHand, transform.position - (transform.right * 0.3f) + (transform.up * 1f));
         }
     }
 
@@ -168,13 +132,13 @@ public class SyncLegs : MonoBehaviour
         animator.SetIKPosition(goal, pos);
         animator.SetIKRotation(goal, rot);
         var hint = (goal == AvatarIKGoal.RightFoot) ? AvatarIKHint.RightKnee : AvatarIKHint.LeftKnee;
-        animator.SetIKHintPositionWeight(hint, 1f);
+        animator.SetIKHintPositionWeight(hint, 0.8f);
         animator.SetIKHintPosition(hint, kneeHint);
     }
 
     Vector3 GetGroundPos(Vector3 origin)
     {
-        if (Physics.Raycast(origin + Vector3.up * 2f, Vector3.down, out RaycastHit hit, 5f, groundLayer))
+        if (Physics.Raycast(origin + Vector3.up * 1f, Vector3.down, out RaycastHit hit, 2f, groundLayer))
             return new Vector3(origin.x, hit.point.y + footOffset, origin.z);
         return new Vector3(origin.x, transform.position.y, origin.z);
     }
