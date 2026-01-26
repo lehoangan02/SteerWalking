@@ -56,6 +56,11 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     [SerializeField] private GameObject DownStairStepRayUpper;
     [SerializeField] private GameObject DownStairStepRayLower;
     [SerializeField] private GameObject DebugSphere;
+    [SerializeField] private float upRayLowerDistance = 0.4f;
+    [SerializeField] private float upRayUpperDistance = 0.6f;
+    [SerializeField] private float downRayLowerDistance = 0.4f;
+    [SerializeField] private float downRayUpperDistance = 0.6f;
+    [SerializeField] private float rayDebugSphereRadius = 0.05f;
     private bool IsMovingForward()
     {
         float forwardSpeed = animator.GetFloat("forwardSpeed");
@@ -65,10 +70,10 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     {
         if (!IsMovingForward()) return;
         RaycastHit hitLower;
-        if (Physics.Raycast(UpStairStepRayLower.transform.position, transform.forward, out hitLower, 0.4f))
+        if (Physics.Raycast(UpStairStepRayLower.transform.position, transform.forward, out hitLower, upRayLowerDistance))
         {
             Debug.Log("Hit Lower Step: " + hitLower.collider.name);
-            if (!Physics.Raycast(UpStairStepRayUpper.transform.position, transform.forward, 0.6f))
+            if (!Physics.Raycast(UpStairStepRayUpper.transform.position, transform.forward, upRayUpperDistance))
             {
                 Debug.Log("Not Hit Upper Step, Up Stair Detected");
                 TimeSinceLastClimbUp = 0f;
@@ -81,10 +86,10 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     {
         if (!IsMovingForward()) return;
         RaycastHit hitLower;
-        if (Physics.Raycast(DownStairStepRayLower.transform.position, -transform.up, out hitLower, 0.4f))
+        if (Physics.Raycast(DownStairStepRayLower.transform.position, -transform.forward, out hitLower, downRayLowerDistance))
         {
             // Debug.Log("Hit Lower Step: " + hitLower.collider.name);
-            if (!Physics.Raycast(DownStairStepRayUpper.transform.position, -transform.up, 0.6f))
+            if (!Physics.Raycast(DownStairStepRayUpper.transform.position, -transform.forward, downRayUpperDistance))
             {
                 // Debug.Log("Not Hit Upper Step, Down Stair Detected");
                 TimeSinceLastClimbDown = 0f;
@@ -147,5 +152,20 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         move.y = verticalVelocity;
 
         characterController.Move(move * Time.deltaTime);
+    }
+    private void OnDrawGizmos()
+    {
+        DrawRayDebug(UpStairStepRayLower, transform.forward, upRayLowerDistance, Color.green);
+        DrawRayDebug(UpStairStepRayUpper, transform.forward, upRayUpperDistance, Color.yellow);
+        DrawRayDebug(DownStairStepRayLower, -transform.forward, downRayLowerDistance, Color.cyan);
+        DrawRayDebug(DownStairStepRayUpper, -transform.forward, downRayUpperDistance, Color.magenta);
+    }
+    private void DrawRayDebug(GameObject originObject, Vector3 direction, float length, Color color)
+    {
+        if (originObject == null) return;
+        Vector3 origin = originObject.transform.position;
+        Gizmos.color = color;
+        Gizmos.DrawWireSphere(origin, rayDebugSphereRadius);
+        Gizmos.DrawLine(origin, origin + direction.normalized * length);
     }
 }
