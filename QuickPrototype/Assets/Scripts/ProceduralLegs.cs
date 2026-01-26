@@ -45,69 +45,76 @@ public class SyncLegs : MonoBehaviour
     }
 
     void Update()
+{
+    float targetAngle = 0;
+
+    // 1. GET CLEAN ANGLE
+    if (externalAngle >= 0)
     {
-        float targetAngle = 0;
-
-        // 1. GET CLEAN ANGLE
-        if (externalAngle >= 0)
-        {
-            targetAngle = externalAngle;
-        }
-        else if (udpReceiver != null)
-        {
-            // STABILITY FIX: Use the direct angle from the receiver instead of calculating from Position
-            targetAngle = udpReceiver.GetWalkingCycleAngle();
-        }
-
-        // 2. APPLY OFFSET AND SMOOTH
-        targetAngle = (targetAngle + angleOffset) % 360f;
-        currentAngle = Mathf.LerpAngle(currentAngle, targetAngle, Time.deltaTime * smoothTime);
-        
-        float finalAngle = (currentAngle + 360f) % 360f;
-
-        // 3. PHASE DETECTION
-        bool isRightSwing = (finalAngle >= 0 && finalAngle < 180);
-
-        if (isRightSwing != lastPhaseWasRight)
-        {
-            if (isRightSwing) rStepStart = rFootPos;
-            else lStepStart = lFootPos;
-            lastPhaseWasRight = isRightSwing;
-        }
-
-        // 4. PREDICTIVE STEPPING
-        // We use the actual current velocity of the body to place the feet
-        Vector3 currentVel = playerMovement ? playerMovement.GetVelocity() : Vector3.zero;
-        Vector3 futurePos = transform.position + (currentVel * stridePrediction);
-
-        if (isRightSwing)
-        {
-            float t = finalAngle / 180f; 
-            float stepArc = Mathf.Sin(t * Mathf.PI);
-
-            Vector3 target = GetGroundPos(futurePos + transform.right * 0.2f);
-            rFootPos = Vector3.Lerp(rStepStart, target, t);
-            rFootPos.y += stepArc * stepHeight;
-            rFootRot = transform.rotation;
-            
-            lFootPos = GetGroundPos(lFootPos); // Keep planted
-        }
-        else
-        {
-            float t = (finalAngle - 180f) / 180f;
-            float stepArc = Mathf.Sin(t * Mathf.PI);
-
-            Vector3 target = GetGroundPos(futurePos - transform.right * 0.2f);
-            lFootPos = Vector3.Lerp(lStepStart, target, t);
-            lFootPos.y += stepArc * stepHeight;
-            lFootRot = transform.rotation;
-
-            rFootPos = GetGroundPos(rFootPos); // Keep planted
-        }
-
-        rKneePos = transform.position + transform.forward * 0.5f + transform.right * 0.2f;
-        lKneePos = transform.position + transform.forward * 0.5f - transform.right * 0.2f;
+        targetAngle = externalAngle;
     }
+    else if (udpReceiver != null)
+    {
+        targetAngle = udpReceiver.GetWalkingCycleAngle();
+    }
+
+    // 2. APPLY OFFSET AND SMOOTH
+    targetAngle = (targetAngle + angleOffset) % 360f;
+    currentAngle = Mathf.LerpAngle(currentAngle, targetAngle, Time.deltaTime * smoothTime);
+    float finalAngle = (currentAngle + 360f) % 360f;
+
+    // 3. PHASE DETECTION
+    bool isRightSwing = (finalAngle >= 0 && finalAngle < 180);
+
+    if (isRightSwing != lastPhaseWasRight)
+    {
+        // When switching feet, we lock the current foot position as the starting point
+        if (isRightSwing) rStepStart = rFootPos;
+        else lStepStart = lFootPos;
+        lastPhaseWasRight = isRightSwing;
+    }
+
+    // 4. PREDICTIVE STEPPING (TURN FIX)
+    Vector3 currentVel = playerMovement ? playerMovement.GetVelocity() : Vector3.zero;
+    
+    // Calculate the side offset based on current rotation
+    Vector3 sideOffset = transform.right * 0.2f;
+
+    if (isRightSwing)
+    {
+        float t = finalAngle / 180f; 
+        float stepArc = Mathf.Sin(t * Mathf.PI);
+
+        // FIX: The target moves WITH the body rotation
+        Vector3 target = GetGroundPos(transform.position + (currentVel * stridePrediction) + sideOffset);
+        
+        rFootPos = Vector3.Lerp(rStepStart, target, t);
+        rFootPos.y += stepArc * stepHeight;
+        rFootRot = transform.rotation;
+        
+        // Planted foot: Still needs to stay at its world position, 
+        // but we update its Y to handle stairs/slopes
+        lFootPos = GetGroundPos(lFootPos); 
+    }
+    else
+    {
+        float t = (finalAngle - 180f) / 180f;
+        float stepArc = Mathf.Sin(t * Mathf.PI);
+
+        // FIX: The target moves WITH the body rotation
+        Vector3 target = GetGroundPos(transform.position + (currentVel * stridePrediction) - sideOffset);
+        
+        lFootPos = Vector3.Lerp(lStepStart, target, t);
+        lFootPos.y += stepArc * stepHeight;
+        lFootRot = transform.rotation;
+
+        rFootPos = GetGroundPos(rFootPos); 
+    }
+
+    // Update Knee Hints to always be in front of the character's current facing
+    rKneePos = transform.position + transform.forward * 0.5f + sideOffset;
+    lKneePos = transform.position + transform.forward * 0.5f - sideOffset;
+}
 
     void OnAnimatorIK(int layerIndex)
     {
