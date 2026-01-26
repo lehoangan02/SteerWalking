@@ -184,8 +184,7 @@ class Cycle3DSimulator:
             f"Rudder = {rudder_deg: .1f}°\n"
             f"Phase A1 = {np.degrees(phase1): .1f}°\n"
             f"Phase A2 = {np.degrees(phase2): .1f}°\n"
-            f"Cycle angular vel = {angular_velocity_deg_s: .2f} °/s\n"
-            f"Cycle speed = {cycle_speed_deg_step: .2f} °/step"
+            f"Cycle angular vel = {angular_velocity_deg_s: .2f} °/s"
         )
 
         return (
