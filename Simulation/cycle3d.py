@@ -44,11 +44,11 @@ class Cycle3DSimulator:
 
         self.rotation_y = 0.0
         self.circle_angle = 0.0
-        self.last_rotation_y = 0.0
         self.last_time = time.time()
 
         self.cycle_speed = 0.1  # radians per frame step (can go negative for reverse)
         self.cycle_speed_step = 0.02  # additive step for up/down keys
+        self.frame_interval_s = 0.03  # nominal frame interval for stable deg/s reporting
 
         self.STEP = 0.02
         self.RADIUS = 1.0
@@ -132,16 +132,16 @@ class Cycle3DSimulator:
         A1 = O1 + R @ a1_local
         A2 = O2 + R @ a2_local
 
-        # Compute rudder and angular velocity (deg and deg/s)
+        # Compute rudder angle and cycle angular velocity in degrees
         rudder_deg = np.degrees(self.rotation_y)
-        angular_velocity = np.degrees((self.rotation_y - self.last_rotation_y) / dt)
-        self.last_rotation_y = self.rotation_y
+        cycle_speed_deg_step = np.degrees(self.cycle_speed)
+        angular_velocity_deg_s = cycle_speed_deg_step / self.frame_interval_s
         self.last_time = now
 
         # Send combined payload to localhost
         self.send_udp_angle(
             angle_deg=rudder_deg,
-            angular_velocity_deg_s=angular_velocity,
+            angular_velocity_deg_s=angular_velocity_deg_s,
             rudder_deg=rudder_deg,
         )
 
@@ -181,11 +181,11 @@ class Cycle3DSimulator:
             f"O2 = ({O2[0]: .2f}, {O2[1]: .2f}, {O2[2]: .2f})\n"
             f"A1 = ({A1[0]: .2f}, {A1[1]: .2f}, {A1[2]: .2f})\n"
             f"A2 = ({A2[0]: .2f}, {A2[1]: .2f}, {A2[2]: .2f})\n\n"
-            f"Rudder = {self.rotation_y: .3f} rad ({rudder_deg: .1f}°)\n"
-            f"Phase A1 = {phase1: .3f} rad ({np.degrees(phase1): .1f}°)\n"
-            f"Phase A2 = {phase2: .3f} rad ({np.degrees(phase2): .1f}°)\n"
-            f"Angular vel = {angular_velocity: .2f} deg/s\n"
-            f"Cycle speed = {self.cycle_speed: .3f} rad/step"
+            f"Rudder = {rudder_deg: .1f}°\n"
+            f"Phase A1 = {np.degrees(phase1): .1f}°\n"
+            f"Phase A2 = {np.degrees(phase2): .1f}°\n"
+            f"Cycle angular vel = {angular_velocity_deg_s: .2f} °/s\n"
+            f"Cycle speed = {cycle_speed_deg_step: .2f} °/step"
         )
 
         return (
