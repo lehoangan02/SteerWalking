@@ -1,6 +1,6 @@
 from models.tracker_runner import TrackerRunner
 from tracker_source.json_tracker import JsonTrackerSource
-# from tracker_source.openvr_tracker import OpenVRTrackerSource
+from tracker_source.openvr_tracker import OpenVRTrackerSource
 from tracker_source.vive_tracker import ViveTrackers
 from models.broadcaster import TrackerUdpBroadcaster
 from models.states import TrackerState
@@ -31,22 +31,22 @@ def main():
     SEND_HZ = 10.0
     
     udp = TrackerUdpBroadcaster(ip=LOCALHOST_IP, port=9000)
-    tracker1 =  ViveTrackers(JsonTrackerSource("sphere_positions_vertical.json", loop=True)) 
-    tracker2 =  ViveTrackers(JsonTrackerSource("sphere_positions_horizontal.json", loop=True))
-    # tracker = ViveTrackers(OpenVRTrackerSource())
-    runner = TrackerRunner(udp, tracker1, send_hz=SEND_HZ)
+    # tracker1 =  ViveTrackers(JsonTrackerSource("sphere_positions_vertical.json", loop=True)) 
+    # tracker2 =  ViveTrackers(JsonTrackerSource("sphere_positions_horizontal.json", loop=True))
+    tracker = ViveTrackers(OpenVRTrackerSource())
+    runner = TrackerRunner(udp, tracker, send_hz=SEND_HZ)
 
     while True:
         cmd = input("> ").strip().lower()
 
         if cmd == "v":
             runner.state = TrackerState.COLLECT_VERTICAL
-            runner.tracker = tracker1
+            runner.tracker = tracker
             run_tracker(runner)
             print("Back to command mode.")
         elif cmd == "h":
             runner.state = TrackerState.COLLECT_HORIZONTAL
-            runner.tracker = tracker2
+            runner.tracker = tracker
             run_tracker(runner)
             print("Back to command mode.")
         elif cmd == "sc":
