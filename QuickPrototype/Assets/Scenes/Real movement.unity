@@ -1421,7 +1421,6 @@ MonoBehaviour:
   port: 9000
   radius: 2
   height: 1
-  maxPredictionTime: 0.5
   statusText: {fileID: 456465016}
 --- !u!4 &1279990483
 Transform:
@@ -1532,7 +1531,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &2137506689
 MonoBehaviour:
   m_ObjectHideFlags: 0
