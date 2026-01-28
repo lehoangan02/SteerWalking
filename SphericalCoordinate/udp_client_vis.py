@@ -28,7 +28,7 @@ CIRCLE_SEGMENTS = 64
 
 positions = []
 latest_ts = 0.0
-circle_data = None
+circle_data = []
 yline_data = None
 degree_data = None
 lock = threading.Lock()
@@ -73,10 +73,12 @@ def recv_loop():
             if len(center) < 3 or len(normal) < 3:
                 continue
             with lock:
-                circle_data = (
-                    (float(center[0]), float(center[1]), float(center[2])),
-                    (float(normal[0]), float(normal[1]), float(normal[2])),
-                    float(radius),
+                circle_data.append(
+                    (
+                        (float(center[0]), float(center[1]), float(center[2])),
+                        (float(normal[0]), float(normal[1]), float(normal[2])),
+                        float(radius),
+                    )
                 )
             print(
                 f"recv circle: r={float(radius):.6f} age={age:.2f}s"
@@ -238,7 +240,7 @@ def main():
         with lock:
             pts = list(positions)[-MAX_POINTS:]
             age = time.time() - latest_ts if latest_ts else 0.0
-            circle = circle_data
+            circles = list(circle_data)
             yline = yline_data
             degree = degree_data
 
@@ -258,7 +260,7 @@ def main():
                 size = max(2, int(3 * depth))
                 pygame.draw.circle(screen, color, (sx, sy), size)
 
-        if circle is not None:
+        for circle in circles:
             center, normal, radius = circle
             draw_circle(screen, center, normal, radius, yaw, pitch, cx, cy)
 

@@ -23,6 +23,7 @@ class TrackerRunner:
         dt = now - self.last_time
         self.last_time = now
         self.accumulator += dt
+        is_return = False
 
         while self.accumulator >= self.send_dt:
             pos = self.tracker.get_tracker_position()
@@ -30,6 +31,10 @@ class TrackerRunner:
             self.accumulator -= self.send_dt
         
         return is_return
+
+    def reset_timing(self):
+        self.last_time = time.perf_counter()
+        self.accumulator = 0.0
 
     def _handle_sample(self, pos):
         if self.state == TrackerState.COLLECT_VERTICAL:
