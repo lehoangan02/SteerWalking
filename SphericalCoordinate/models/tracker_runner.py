@@ -37,6 +37,9 @@ class TrackerRunner:
         self.accumulator = 0.0
 
     def _handle_sample(self, pos):
+        if pos == None:
+            return False
+        
         if self.state == TrackerState.COLLECT_VERTICAL:
             self.udp._update_vertical_circle(pos)
             if self.udp.centerV:
