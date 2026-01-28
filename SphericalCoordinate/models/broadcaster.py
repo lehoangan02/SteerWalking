@@ -76,7 +76,7 @@ class TrackerUdpBroadcaster:
         if pos is None:
             return
 
-        if self.center is None or self.ref_lineV is None:
+        if self.centerV is None or self.ref_lineV is None:
             return
 
         origin, highest = self.ref_lineV
