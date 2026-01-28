@@ -97,6 +97,7 @@ class TrackerUdpBroadcaster:
             {
                 "angle_deg": angle_deg,
                 "angular_velocity": angular_velocity,
+                "rudder_deg": 0.0,
                 "ts": ts,
             }
         ).encode("utf-8")

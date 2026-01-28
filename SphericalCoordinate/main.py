@@ -53,6 +53,9 @@ def main():
             runner.state = TrackerState.SEND_CIRCLE
             run_tracker(runner)
             print("Back to command mode.")
+        elif cmd == "rl":
+            runner.state = TrackerState.SEND_REF_LINE
+            run_tracker(runner)
         elif cmd == "stream":
             runner.state = TrackerState.STREAMING
             run_tracker(runner)

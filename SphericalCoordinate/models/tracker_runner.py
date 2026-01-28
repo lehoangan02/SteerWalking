@@ -59,7 +59,11 @@ class TrackerRunner:
             self.udp.send_ref_line()
         elif self.state == TrackerState.RETURN:
             return True
-
+        elif self.state == TrackerState.STREAMING:
+            res = self.udp.send_degree_position(pos)
+            print(res)
+            return False
+        
         # --- STREAMING DATA ---
         self.udp.send_xyz_position(pos)
         print(pos)
