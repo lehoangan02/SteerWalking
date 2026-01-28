@@ -803,8 +803,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RealAnimationController
   udpReceiver: {fileID: 1279990482}
   playerMovement: {fileID: 733367224}
+  masterController: {fileID: 0}
   strideLength: 0.5
-  smoothing: 0.1
+  turnSmoothing: 0.3
+  speedSmoothing: 0.2
   deadzone: 10
 --- !u!114 &733367226
 MonoBehaviour:
@@ -1415,9 +1417,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cfeaabcadb38c6641856ef466138d710, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UDP_SimulatedReceiver
+  playerTransform: {fileID: 0}
   port: 9000
   radius: 2
   height: 1
+  maxPredictionTime: 0.5
   statusText: {fileID: 456465016}
 --- !u!4 &1279990483
 Transform:
@@ -1528,7 +1532,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &2137506689
 MonoBehaviour:
   m_ObjectHideFlags: 0
