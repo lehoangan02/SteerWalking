@@ -1,5 +1,5 @@
 from tracker_source.json_tracker import JsonTrackerSource
-# from tracker_source.openvr_tracker import OpenVRTrackerSource
+from tracker_source.openvr_tracker import OpenVRTrackerSource
 from tracker_source.vive_tracker import ViveTrackers
 from models.broadcaster import TrackerUdpBroadcaster
 from models.states import TrackerState

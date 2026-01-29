@@ -266,7 +266,15 @@ def y_direction(cur, last):
     else:
         return 0
 
-def circle_points_at_distance(circle_center, circle_normal, circle_radius, point, d, eps=1e-9):
+def circle_points_at_distance(
+    circle_center,
+    circle_normal,
+    circle_radius,
+    point,
+    d,
+    offset=0.1,
+    eps=1e-9,
+):
     C = np.asarray(circle_center, float)
     n = np.asarray(circle_normal, float)
     P = np.asarray(point, float)
@@ -276,35 +284,44 @@ def circle_points_at_distance(circle_center, circle_normal, circle_radius, point
         raise ValueError("Circle normal has zero length")
     n = n / n_norm
 
-    # Distance from point to circle plane
-    h = np.dot(P - C, n)
+    # Effective distance with tolerance
+    d_min = max(d - offset, 0.0)
+    d_max = d + offset
 
-    if abs(h) > d:
-        return []  # sphere does not reach plane
+    # Distance from point to circle plane
+    h = abs(np.dot(P - C, n))
+
+    # Sphere shell does not reach plane
+    if h > d_max + eps:
+        return []
 
     # Projection of P onto circle plane
-    P_proj = P - h * n
+    P_proj = P - np.dot(P - C, n) * n
 
-    # Radius of intersection circle (sphere ∩ plane)
-    rho = math.sqrt(max(d*d - h*h, 0.0))
+    # Radius range of intersection circle (sphere ∩ plane)
+    rho_min = math.sqrt(max(d_min * d_min - h * h, 0.0))
+    rho_max = math.sqrt(max(d_max * d_max - h * h, 0.0))
 
-    # Distance between circle centers in plane
     v = P_proj - C
     D = np.linalg.norm(v)
 
-    # No intersection cases
-    if D > circle_radius + rho + eps:
+    # No intersection even with tolerance
+    if D > circle_radius + rho_max + eps:
         return []
-    if D < abs(circle_radius - rho) - eps:
+    if D < abs(circle_radius - rho_max) - eps:
         return []
+
+    # Use midpoint radius for point construction
+    rho = 0.5 * (rho_min + rho_max)
 
     # Tangent (one solution)
     if abs(D - (circle_radius + rho)) < eps or abs(D - abs(circle_radius - rho)) < eps:
-        dir_vec = v / D if D > eps else np.zeros(3)
+        if D < eps:
+            return []
+        dir_vec = v / D
         return [(C + circle_radius * dir_vec).tolist()]
 
     # Two intersection points
-    # Build orthonormal basis in the plane
     u = v / D
     w = np.cross(n, u)
 
@@ -314,11 +331,11 @@ def circle_points_at_distance(circle_center, circle_normal, circle_radius, point
     b = math.sqrt(h2)
 
     p0 = C + a * u
-
     p1 = p0 + b * w
     p2 = p0 - b * w
 
     return [p1.tolist(), p2.tolist()]
+
 
 def project_point_to_circle_rim(center, normal, radius, point, eps=1e-12):
     """

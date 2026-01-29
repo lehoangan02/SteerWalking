@@ -72,6 +72,9 @@ class TrackerUdpBroadcaster:
         for p in candidates:
             degrees.append(angle_deg_from_ref(self.centerC, self.ref_pointC, p))
             
+        if not degrees:
+            return 0.0
+        
         if self.i_is_y_up == 1:
             final_degree = max(degrees)
         else:
