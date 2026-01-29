@@ -66,6 +66,7 @@ class TrackerRunner:
             self.state = TrackerState.RETURN
         elif self.state == TrackerState.SEND_REF_LINE:
             self.udp.send_ref_line()
+            self.state = TrackerState.RETURN
         elif self.state == TrackerState.RETURN:
             return True
         elif self.state == TrackerState.STREAMING:
