@@ -763,7 +763,7 @@ MonoBehaviour:
   udpReceiver: {fileID: 1279990482}
   playerMovement: {fileID: 733367224}
   masterController: {fileID: 0}
-  strideLength: 0.5
+  strideLength: 0.2
   turnSmoothing: 0.3
   speedSmoothing: 0.2
   deadzone: 10
@@ -781,11 +781,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProceduralLegs
   udpReceiver: {fileID: 1279990482}
   playerMovement: {fileID: 733367224}
-  stepHeight: 0.5
-  stridePrediction: 0.2
+  detectRange: 0.3
+  stepThreshold: 0.15
+  showDebugRays: 1
+  flatStepHeight: 0.3
+  stairStepHeight: 0.5
+  downStepHeight: 0.15
+  swingReachOffset: 0.3
+  stridePrediction: 0.3
   angleOffset: 43
   smoothTime: 10
-  footOffset: 0.1
+  hipSwayAmount: 0.05
+  hipTwistAmount: 5
+  footRotRange: 15
+  footOffset: 0.05
   hipHeight: 1
   forceArmsDown: 1
   groundLayer:
@@ -830,9 +839,11 @@ MonoBehaviour:
   legs: {fileID: 733367226}
   udp: {fileID: 1279990482}
   walkSpeed: 1
-  globalStepHeight: 0.5
   rotationSpeed: 100
-  strideLength: 0.2
+  stairStepHeight: 0.5
+  walkStepHeight: 0.3
+  stepDownArcHeight: 0.15
+  strideLength: 0.3
   hipHeightOffset: 1
 --- !u!114 &733367229
 MonoBehaviour:
@@ -1782,13 +1793,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 241c39c5abe06574eac9bcab9f9a4377, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StairGenerator
-  stepCount: 10
+  stepCount: 5
   stepWidth: 2
   stepHeight: 0.5
   stepDepth: 1
-  stepOffset: 0.1
+  stepOffset: 0.2
   createDownStairs: 1
-  topPlatformLength: 3
+  topPlatformLength: 2
   layerName: Stair
 --- !u!4 &2137506690
 Transform:

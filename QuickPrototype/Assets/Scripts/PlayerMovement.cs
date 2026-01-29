@@ -43,13 +43,16 @@ public class PlayerMovement : MonoBehaviour
         }
 
         // 4. APPLY VERTICAL SMOOTHING
-        if (Mathf.Abs(smoothYOffset) > 0.001f)
-        {
-            // We use a smaller lerp factor to make it feel like a "lift" rather than a "snap"
-            float moveStep = Mathf.Lerp(0, smoothYOffset, Time.deltaTime * climbSmoothing);
-            transform.position += Vector3.up * moveStep;
-            smoothYOffset -= moveStep;
-        }
+            if (Mathf.Abs(smoothYOffset) > 0.001f)
+            {
+                // If we are going DOWN (offset < 0), we move FASTER (climbSmoothing * 1.5)
+                // This ensures we hit the ground before the next step starts.
+                float currentSmoothing = (smoothYOffset < 0) ? climbSmoothing * 1.5f : climbSmoothing;
+
+                float moveStep = Mathf.Lerp(0, smoothYOffset, Time.deltaTime * currentSmoothing);
+                transform.position += Vector3.up * moveStep;
+                smoothYOffset -= moveStep;
+            }
 
         // 5. SLOPE PROJECTION
         Ray ray = new Ray(transform.position + Vector3.up * 0.5f, Vector3.down);
@@ -76,8 +79,6 @@ public class PlayerMovement : MonoBehaviour
         if (Physics.Raycast(lowerRay, out RaycastHit lowerHit, stepCheckDistance, groundMask))
         {
             // FIX: Check if it's a WALL (vertical), not a SLOPE (angled).
-            // If the normal is pointing up, it's a floor/ramp. We let physics handle that.
-            // If the normal is horizontal (dot product near 0), it's a step.
             float wallAngle = Vector3.Angle(Vector3.up, lowerHit.normal);
             
             // Only step up if the obstacle is roughly vertical (> 70 degrees)
@@ -95,11 +96,24 @@ public class PlayerMovement : MonoBehaviour
 
     void CheckStepDown()
     {
-        Ray downRay = new Ray(transform.position + Vector3.up * 0.1f, Vector3.down);
-        if (Physics.Raycast(downRay, out RaycastHit hit, stepHeight + 0.5f, groundMask))
+        // 1. PREDICTION: Look slightly ahead of the character based on velocity.
+        // If we only look at transform.position, we don't see the stair until we are already floating.
+        Vector3 predictPos = transform.position;
+        if (velocity.magnitude > 0.1f)
         {
-            float dist = hit.distance - 0.1f;
-            if (dist > 0.05f && dist <= stepHeight)
+            predictPos += velocity.normalized * 0.25f; // Look 25cm ahead
+        }
+
+        // 2. RAYCAST: Cast from slightly up + forward
+        Ray downRay = new Ray(predictPos + Vector3.up * 0.2f, Vector3.down);
+
+        // 3. TOLERANCE: We cast further (stepHeight * 2) to catch the ground         
+        if (Physics.Raycast(downRay, out RaycastHit hit, (stepHeight * 2.0f), groundMask))
+        {
+            float dist = hit.distance - 0.2f;
+
+            // 4. THE CHECK: 
+            if (dist > 0.05f && dist <= (stepHeight * 1.5f))
             {
                 smoothYOffset = -dist;
             }

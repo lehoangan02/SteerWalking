@@ -4,12 +4,7 @@ using UnityEngine.InputSystem;
 [ExecuteAlways]
 public class PlayerMasterController : MonoBehaviour
 {
-    // The three modes for your friend to choose from
-    public enum ControlMode { 
-        Auto,           // Switches to keyboard when a key is pressed, otherwise uses UDP
-        KeyboardOnly,   // Ignores Python simulation entirely
-        UDPOnly         // Ignores Keyboard inputs entirely
-    }
+    public enum ControlMode { Auto, KeyboardOnly, UDPOnly }
 
     [Header("Control Mode")]
     public ControlMode activeMode = ControlMode.Auto;
@@ -19,10 +14,14 @@ public class PlayerMasterController : MonoBehaviour
     public SyncLegs legs;
     public UDP_SimulatedReceiver udp;
 
-    [Header("Movement Settings")]
+    [Header("Movement Speed")]
     [Range(0.5f, 10f)] public float walkSpeed = 2.0f;
-    [Range(0.1f, 1.0f)] public float globalStepHeight = 0.4f;
     public float rotationSpeed = 100f;
+
+    [Header("Step Height Settings")]
+    [Range(0.2f, 1.0f)] public float stairStepHeight = 0.45f;
+    [Range(0.05f, 0.4f)] public float walkStepHeight = 0.1f;
+    [Range(0.05f, 0.4f)] public float stepDownArcHeight = 0.15f; 
 
     [Header("Visual & IK Tuning")]
     [Range(0f, 1f)] public float strideLength = 0.5f;
@@ -30,6 +29,8 @@ public class PlayerMasterController : MonoBehaviour
 
     private float virtualAngle = 0f;
     private bool isManualMoving = false;
+    private bool isManualTurning = false; // <--- NEW TRACKER
+    private float manualStartTime = 0f;
 
     private void Awake()
     {
@@ -44,38 +45,14 @@ public class PlayerMasterController : MonoBehaviour
 
         if (activeMode == ControlMode.Auto)
         {
-            if (isManualMoving && !AnyKeyHeld())
+            // Reset to UDP if no keys are pressed
+            if ((isManualMoving || isManualTurning) && !AnyKeyHeld())
             {
                 isManualMoving = false;
-                manualStartTime = 0f; // Reset the clock for next time
+                isManualTurning = false;
+                manualStartTime = 0f; 
                 if (legs) legs.UseUDPControl(); 
             }
-        }
-    }
-
-    private void HandleModeTransitions()
-    {
-        if (legs == null) return;
-
-        switch (activeMode)
-        {
-            case ControlMode.UDPOnly:
-                legs.UseUDPControl();
-                isManualMoving = false;
-                break;
-
-            case ControlMode.KeyboardOnly:
-                // Do nothing, wait for manual function calls
-                break;
-
-            case ControlMode.Auto:
-                // If we were moving manually but stopped, go back to UDP
-                if (isManualMoving && !AnyKeyHeld())
-                {
-                    isManualMoving = false;
-                    legs.UseUDPControl(); 
-                }
-                break;
         }
     }
 
@@ -83,71 +60,74 @@ public class PlayerMasterController : MonoBehaviour
     {
         if (movement) {
             movement.speed = walkSpeed;
-            movement.stepHeight = globalStepHeight;
+            movement.stepHeight = stairStepHeight; 
         }
         if (legs) {
-            legs.stepHeight = globalStepHeight; 
+            legs.stairStepHeight = stairStepHeight; 
+            legs.flatStepHeight = walkStepHeight;
+            legs.downStepHeight = stepDownArcHeight; 
             legs.stridePrediction = strideLength;
             legs.hipHeight = hipHeightOffset;
         }
     }
 
-    // --- FRIENDLY INTERFACE FUNCTIONS ---
+    // --- INPUT FUNCTIONS ---
 
     public void MoveForward()
     {
-        if (activeMode == ControlMode.UDPOnly) return; // Block if in UDP mode
-
+        if (activeMode == ControlMode.UDPOnly) return;
         isManualMoving = true;
-        if (movement) movement.AddVelocity(transform.forward);
+        // FIX 1: Send Vector3.forward (Local), NOT transform.forward (World)
+        if (movement) movement.AddVelocity(Vector3.forward); 
         UpdateVirtualCycle(1f);
     }
 
     public void MoveBackward()
     {
         if (activeMode == ControlMode.UDPOnly) return;
-
         isManualMoving = true;
-        if (movement) movement.AddVelocity(-transform.forward);
+        // FIX 1: Send Local Backward
+        if (movement) movement.AddVelocity(Vector3.back); 
         UpdateVirtualCycle(-1f);
     }
 
     public void Turn(float direction)
     {
         if (activeMode == ControlMode.UDPOnly) return;
+        
+        isManualTurning = true; // Mark that we are turning
         if (movement) movement.Rotate(direction * rotationSpeed * Time.deltaTime);
+
+        // FIX 2: If we are turning but NOT walking, march in place to prevent leg twist
+        if (!isManualMoving)
+        {
+            UpdateVirtualCycle(0.5f); // 0.5f speed for turning in place
+        }
     }
 
     public void Stop()
     {
         if (movement) movement.velocity = Vector3.zero;
         isManualMoving = false;
+        isManualTurning = false;
         if (legs) legs.UseUDPControl();
     }
 
-    private float manualStartTime = 0f;
-
     private void UpdateVirtualCycle(float direction)
     {
-        // If we just started moving, record the start time to sync the clock
-        if (!isManualMoving) {
-            manualStartTime = Time.time;
-        }
+        if (!isManualMoving && !isManualTurning) manualStartTime = Time.time;
 
-        // This matches your Python math: (time * speed * 360) % 360
-        // We use Time.time - manualStartTime so the leg starts at 0 degrees when you press the key
+        // If just turning (direction is small), use a slower cycle
+        float cycleSpeed = (Mathf.Abs(direction) < 0.9f) ? walkSpeed * 0.5f : walkSpeed;
+
         float elapsed = Time.time - manualStartTime;
-        
-        // direction is 1 for forward, -1 for backward
-        virtualAngle = (elapsed * walkSpeed * 360.0f) % 360.0f;
+        virtualAngle = (elapsed * cycleSpeed * 360.0f) % 360.0f;
 
-        // Handle backward motion correctly for the modulo
-        if (direction < 0) {
-            virtualAngle = 360.0f - virtualAngle;
-        }
+        if (direction < 0) virtualAngle = 360.0f - virtualAngle;
 
         if (legs) legs.UpdateStepPhase(virtualAngle);
     }
+
     private bool AnyKeyHeld()
     {
         return Keyboard.current != null && Keyboard.current.anyKey.isPressed;
