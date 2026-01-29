@@ -1,27 +1,12 @@
-from models.tracker_runner import TrackerRunner
 from tracker_source.json_tracker import JsonTrackerSource
-from tracker_source.openvr_tracker import OpenVRTrackerSource
+# from tracker_source.openvr_tracker import OpenVRTrackerSource
 from tracker_source.vive_tracker import ViveTrackers
 from models.broadcaster import TrackerUdpBroadcaster
 from models.states import TrackerState
+from models.tracker_runner import TrackerRunner
+from utils.util import parse_args
 
 import time
-
-
-def run_tracker(
-    runner: TrackerRunner
-):
-    # try:
-    runner.reset_timing()
-    while True:
-        is_return = runner.tick()
-        if is_return:
-            break
-        time.sleep(0.001)
-
-    # finally:
-    #     udp.close()
-    #     tracker.shutdown()
 
 def main():
     print("Type 'v' or 'h' or 'sc' or 'q' or 'steam'")
@@ -31,34 +16,34 @@ def main():
     SEND_HZ = 10.0
     
     udp = TrackerUdpBroadcaster(ip=LOCALHOST_IP, port=9000)
-    # tracker1 =  ViveTrackers(JsonTrackerSource("sphere_positions_vertical.json", loop=True)) 
-    # tracker2 =  ViveTrackers(JsonTrackerSource("sphere_positions_horizontal.json", loop=True))
-    tracker = ViveTrackers(OpenVRTrackerSource())
-    runner = TrackerRunner(udp, tracker, send_hz=SEND_HZ)
+    tracker1 =  ViveTrackers(JsonTrackerSource("spv.json", loop=True)) 
+    tracker2 =  ViveTrackers(JsonTrackerSource("sph.json", loop=True))
+    # tracker = ViveTrackers(OpenVRTrackerSource())
+    runner = TrackerRunner(udp, tracker1, send_hz=SEND_HZ)
 
     while True:
         cmd = input("> ").strip().lower()
 
         if cmd == "v":
             runner.state = TrackerState.COLLECT_VERTICAL
-            runner.tracker = tracker
-            run_tracker(runner)
+            runner.tracker = tracker1
+            runner.run()
             print("Back to command mode.")
         elif cmd == "h":
             runner.state = TrackerState.COLLECT_HORIZONTAL
-            runner.tracker = tracker
-            run_tracker(runner)
+            runner.tracker = tracker2
+            runner.run()
             print("Back to command mode.")
         elif cmd == "sc":
             runner.state = TrackerState.SEND_CIRCLE
-            run_tracker(runner)
+            runner.run()
             print("Back to command mode.")
         elif cmd == "rl":
             runner.state = TrackerState.SEND_REF_LINE
-            run_tracker(runner)
+            runner.run()
         elif cmd == "stream":
             runner.state = TrackerState.STREAMING
-            run_tracker(runner)
+            runner.run()
             print("Back to command mode.")
         elif cmd == "quit":
             print("Exiting.")

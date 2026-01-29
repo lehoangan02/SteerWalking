@@ -14,7 +14,11 @@ SOCKET_TIMEOUT_S = 0.1
 WINDOW_W = 900
 WINDOW_H = 700
 BG_COLOR = (15, 18, 22)
-AXIS_COLOR = (80, 90, 110)
+AXIS_X_COLOR = (220, 90, 90)
+AXIS_Y_COLOR = (90, 220, 130)
+AXIS_Z_COLOR = (90, 140, 220)
+GRID_MINOR_COLOR = (35, 45, 60)
+GRID_MAJOR_COLOR = (55, 70, 90)
 POINT_OLDEST_COLOR = (80, 120, 170)
 POINT_NEWEST_COLOR = (180, 240, 255)
 TEXT_COLOR = (230, 230, 230)
@@ -25,6 +29,10 @@ Z_CLIP = -2.5
 ROTATE_SPEED = 0.008
 MAX_POINTS = 10
 CIRCLE_SEGMENTS = 64
+CIRCLE_HISTORY = 50
+GRID_SIZE = 2.0
+GRID_STEP = 0.5
+GRID_MAJOR_STEP = 1.0
 
 positions = []
 latest_ts = 0.0
@@ -80,6 +88,8 @@ def recv_loop():
                         float(radius),
                     )
                 )
+                if len(circle_data) > CIRCLE_HISTORY:
+                    del circle_data[: len(circle_data) - CIRCLE_HISTORY]
             print(
                 f"recv circle: r={float(radius):.6f} age={age:.2f}s"
             )
@@ -140,13 +150,42 @@ def draw_axes(screen, cx, cy, yaw, pitch):
     for axis in ("x", "y", "z"):
         if axis == "x":
             x, y, z = axis_len, 0.0, 0.0
+            color = AXIS_X_COLOR
         elif axis == "y":
             x, y, z = 0.0, axis_len, 0.0
+            color = AXIS_Y_COLOR
         else:
             x, y, z = 0.0, 0.0, axis_len
+            color = AXIS_Z_COLOR
         rx, ry, rz = rotate_point(x, y, z, yaw, pitch)
         sx, sy, _ = project_point(rx, ry, rz, cx, cy)
-        pygame.draw.line(screen, AXIS_COLOR, (cx, cy), (sx, sy), 2)
+        pygame.draw.line(screen, color, (cx, cy), (sx, sy), 2)
+
+
+def draw_grid(screen, cx, cy, yaw, pitch):
+    def draw_line(p0, p1, color, width=1):
+        rx0, ry0, rz0 = rotate_point(p0[0], p0[1], p0[2], yaw, pitch)
+        rx1, ry1, rz1 = rotate_point(p1[0], p1[1], p1[2], yaw, pitch)
+        sx0, sy0, _ = project_point(rx0, ry0, rz0, cx, cy)
+        sx1, sy1, _ = project_point(rx1, ry1, rz1, cx, cy)
+        pygame.draw.line(screen, color, (sx0, sy0), (sx1, sy1), width)
+
+    steps = int((GRID_SIZE * 2) / GRID_STEP)
+    for i in range(steps + 1):
+        offset = -GRID_SIZE + i * GRID_STEP
+        is_major = abs((offset / GRID_MAJOR_STEP) - round(offset / GRID_MAJOR_STEP)) < 1e-6
+        color = GRID_MAJOR_COLOR if is_major else GRID_MINOR_COLOR
+        width = 2 if is_major else 1
+
+        # XZ plane (y=0).
+        draw_line((-GRID_SIZE, 0.0, offset), (GRID_SIZE, 0.0, offset), color, width)
+        draw_line((offset, 0.0, -GRID_SIZE), (offset, 0.0, GRID_SIZE), color, width)
+        # XY plane (z=0).
+        draw_line((-GRID_SIZE, offset, 0.0), (GRID_SIZE, offset, 0.0), color, width)
+        draw_line((offset, -GRID_SIZE, 0.0), (offset, GRID_SIZE, 0.0), color, width)
+        # YZ plane (x=0).
+        draw_line((0.0, -GRID_SIZE, offset), (0.0, GRID_SIZE, offset), color, width)
+        draw_line((0.0, offset, -GRID_SIZE), (0.0, offset, GRID_SIZE), color, width)
 
 
 def _normalize(vec):
@@ -235,6 +274,7 @@ def main():
 
         screen.fill(BG_COLOR)
         cx, cy = WINDOW_W // 2, WINDOW_H // 2
+        draw_grid(screen, cx, cy, yaw, pitch)
         draw_axes(screen, cx, cy, yaw, pitch)
 
         with lock:
@@ -260,8 +300,7 @@ def main():
                 size = max(2, int(3 * depth))
                 pygame.draw.circle(screen, color, (sx, sy), size)
 
-        for circle in circles:
-            center, normal, radius = circle
+        for center, normal, radius in circles:
             draw_circle(screen, center, normal, radius, yaw, pitch, cx, cy)
 
         if yline is not None:

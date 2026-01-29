@@ -203,3 +203,16 @@ def visualize_points(points, center, window_size=(640, 640)):
         clock.tick(60)
 
     pygame.quit()
+
+def line_from_point_and_vector(point, vector):
+    px, py, pz = point
+    vx, vy, vz = vector
+
+    def line(t):
+        return [
+            px + vx * t,
+            py + vy * t,
+            pz + vz * t,
+        ]
+
+    return line

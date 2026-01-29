@@ -17,6 +17,15 @@ class TrackerRunner:
         self.state = TrackerState.STREAMING
         self.last_time = time.perf_counter()
         self.accumulator = 0.0
+        
+    def run(self):
+        self.reset_timing()
+        while True:
+            is_return = self.tick()
+            if is_return:
+                break
+            time.sleep(0.001)
+        return
 
     def tick(self):
         now = time.perf_counter()
