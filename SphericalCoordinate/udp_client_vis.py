@@ -37,7 +37,7 @@ GRID_MAJOR_STEP = 1.0
 positions = []
 latest_ts = 0.0
 circle_data = []
-yline_data = None
+yline_data = []
 degree_data = None
 lock = threading.Lock()
 
@@ -95,16 +95,18 @@ def recv_loop():
             )
             continue
         if msg_type == "refline":
-            if not all(k in msg for k in ("origin", "highest")):
+            if not all(k in msg for k in ("origin", "point")):
                 continue
             origin = msg["origin"]
-            highest = msg["highest"]
-            if len(origin) < 3 or len(highest) < 3:
+            point = msg["point"]
+            if len(origin) < 3 or len(point) < 3:
                 continue
             with lock:
-                yline_data = (
-                    (float(origin[0]), float(origin[1]), float(origin[2])),
-                    (float(highest[0]), float(highest[1]), float(highest[2])),
+                yline_data.append(
+                    (
+                        (float(origin[0]), float(origin[1]), float(origin[2])),
+                        (float(point[0]), float(point[1]), float(point[2])),
+                    )
                 )
             print(f"recv yline: age={age:.2f}s")
             continue
@@ -230,6 +232,18 @@ def draw_circle(screen, center, normal, radius, yaw, pitch, cx, cy):
     if len(points) > 1:
         pygame.draw.lines(screen, (255, 160, 80), False, points, 2)
 
+def draw_line_3d(screen, p0, p1, color, yaw, pitch, cx, cy, width=2):
+    # Rotate both points
+    x0, y0, z0 = rotate_point(p0[0], p0[1], p0[2], yaw, pitch)
+    x1, y1, z1 = rotate_point(p1[0], p1[1], p1[2], yaw, pitch)
+
+    # Project to screen
+    sx0, sy0, _ = project_point(x0, y0, z0, cx, cy)
+    sx1, sy1, _ = project_point(x1, y1, z1, cx, cy)
+
+    # Draw
+    pygame.draw.line(screen, color, (sx0, sy0), (sx1, sy1), width)
+
 
 def draw_yline(screen, origin, highest, yaw, pitch, cx, cy):
     ox, oy, oz = rotate_point(origin[0], origin[1], origin[2], yaw, pitch)
@@ -281,7 +295,7 @@ def main():
             pts = list(positions)[-MAX_POINTS:]
             age = time.time() - latest_ts if latest_ts else 0.0
             circles = list(circle_data)
-            yline = yline_data
+            ylines = list(yline_data)
             degree = degree_data
 
         if pts:
@@ -302,9 +316,8 @@ def main():
 
         for center, normal, radius in circles:
             draw_circle(screen, center, normal, radius, yaw, pitch, cx, cy)
-
-        if yline is not None:
-            origin, highest = yline
+            
+        for origin, highest in ylines:
             draw_yline(screen, origin, highest, yaw, pitch, cx, cy)
 
         label = f"points={len(pts)} age={age:.2f}s"

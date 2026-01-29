@@ -44,10 +44,20 @@ class TrackerRunner:
     def reset_timing(self):
         self.last_time = time.perf_counter()
         self.accumulator = 0.0
+        
+    def set_send_hz(self, send_hz: float):
+        if send_hz <= 0.0:
+            raise ValueError("send_hz must be > 0")
+
+        self.send_dt = 1.0 / send_hz
+        self.reset_timing()
+
 
     def _handle_sample(self, pos):
         if pos == None:
             return False
+        
+        self.udp._update_y_direction(pos)
         
         if self.state == TrackerState.COLLECT_VERTICAL:
             self.udp._update_vertical_circle(pos)
@@ -57,15 +67,19 @@ class TrackerRunner:
         elif self.state == TrackerState.COLLECT_HORIZONTAL:
             self.udp._update_horizontal_circle(pos)
             if self.udp.centerH:
+                self.udp._compute_center_circle()
                 print("[DONE] Computing horizontal circle!")
                 self.state = TrackerState.RETURN
         elif self.state == TrackerState.SEND_CIRCLE:
             self.udp.send_circle(self.udp.centerV, self.udp.v_normV, self.udp.radiusV)
             self.udp.send_circle(self.udp.centerH, self.udp.v_normH, self.udp.radiusH)
+            self.udp.send_circle(self.udp.centerC, self.udp.v_normC, self.udp.radiusC)
             print("[DONE] Send circle!")
             self.state = TrackerState.RETURN
         elif self.state == TrackerState.SEND_REF_LINE:
-            self.udp.send_ref_line()
+            self.udp._compute_center_ref_line(pos)
+            self.udp.send_ref_line(self.udp.centerV, self.udp.ref_pointV)
+            self.udp.send_ref_line(self.udp.centerC, self.udp.ref_pointC)
             self.state = TrackerState.RETURN
         elif self.state == TrackerState.RETURN:
             return True
