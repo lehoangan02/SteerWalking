@@ -36,7 +36,8 @@ class TrackerRunner:
 
         while self.accumulator >= self.send_dt:
             pos = self.tracker.get_tracker_position()
-            is_return = self._handle_sample(pos)
+            deg = self.tracker.get_tracker_rudder_degree()
+            is_return = self._handle_sample(pos, deg)
             self.accumulator -= self.send_dt
         
         return is_return
@@ -53,7 +54,7 @@ class TrackerRunner:
         self.reset_timing()
 
 
-    def _handle_sample(self, pos):
+    def _handle_sample(self, pos, deg):
         if pos == None:
             return False
         
@@ -72,23 +73,24 @@ class TrackerRunner:
                 self.state = TrackerState.RETURN
         elif self.state == TrackerState.SEND_CIRCLE:
             self.udp.send_circle(self.udp.centerV, self.udp.v_normV, self.udp.radiusV)
-            self.udp.send_circle(self.udp.centerH, self.udp.v_normH, self.udp.radiusH)
-            self.udp.send_circle(self.udp.centerC, self.udp.v_normC, self.udp.radiusC)
+            # self.udp.send_circle(self.udp.centerH, self.udp.v_normH, self.udp.radiusH)
+            # self.udp.send_circle(self.udp.centerC, self.udp.v_normC, self.udp.radiusC)
             print("[DONE] Send circle!")
             self.state = TrackerState.RETURN
         elif self.state == TrackerState.SEND_REF_LINE:
-            self.udp._compute_center_ref_line(pos)
+            self.udp._mark_ref_rudder_degree(deg)
+            # self.udp._compute_center_ref_line(pos)
             self.udp.send_ref_line(self.udp.centerV, self.udp.ref_pointV)
-            self.udp.send_ref_line(self.udp.centerC, self.udp.ref_pointC)
+            # self.udp.send_ref_line(self.udp.centerC, self.udp.ref_pointC)
             self.state = TrackerState.RETURN
         elif self.state == TrackerState.RETURN:
             return True
         elif self.state == TrackerState.STREAMING:
-            res = self.udp.send_degree_position(pos)
+            res = self.udp.send_degree_position(pos, deg)
             print(res)
             return False
         
         # --- STREAMING DATA ---
         self.udp.send_xyz_position(pos)
-        print(pos)
+        print(pos, deg)
         return False

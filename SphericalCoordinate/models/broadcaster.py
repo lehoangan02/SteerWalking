@@ -24,6 +24,7 @@ class TrackerUdpBroadcaster:
         self.centerH = self.v_normH = self.radiusH = None
         self.centerC = self.v_normC = self.radiusC = self.ref_pointC = None
         self.i_is_y_up = None
+        self.ref_degree = None
         
         self.num_point_init = 100
         self._init_pointsV = []
@@ -63,6 +64,9 @@ class TrackerUdpBroadcaster:
     def _compute_center_ref_line(self, pos):
         self.ref_pointC = project_point_to_circle_rim(
             self.centerC, self.v_normC, self.radiusC, pos)
+        
+    def _mark_ref_rudder_degree(self, deg):
+        self.ref_degree = deg
         
     def _compute_rudder_degree(self, pos):
         candidates = circle_points_at_distance(
@@ -113,7 +117,7 @@ class TrackerUdpBroadcaster:
         ).encode("utf-8")
         self.sock.sendto(packet, self.addr)
         
-    def send_degree_position(self, pos):
+    def send_degree_position(self, pos, deg):
         if pos is None:
             return
 
@@ -121,7 +125,7 @@ class TrackerUdpBroadcaster:
             return
 
         angle_deg = angle_deg_from_highest(self.centerH, self.ref_pointV, pos)
-        rudder_deg = self._compute_rudder_degree(pos)
+        rudder_deg = deg - self.ref_degree
         ts = time.time()
         
         dt = ts - self.prev_time if self.prev_time else 0.0
