@@ -27,7 +27,7 @@ public class UDP_SimulatedReceiver : MonoBehaviour
     [SerializeField] private float radius = 0.3f; 
     [SerializeField] private float height = 0.1f;
 
-    [Header("UI")]
+    [Header("UI Debug")]
     [SerializeField] private TextMeshProUGUI statusText;
 
     private UdpClient udpClient;
@@ -35,12 +35,15 @@ public class UDP_SimulatedReceiver : MonoBehaviour
     private bool running;
     private readonly object dataLock = new object();
     
+    // Data containers
     private PythonSimPayload latestSimData; 
     private TrackerPayload latestTrackerPayload;
 
     void Start()
     {
         if (playerTransform == null) playerTransform = transform;
+        
+        // Init with empty data to avoid null errors
         latestTrackerPayload = new TrackerPayload { trackers = new TrackerData[0] };
         latestSimData = new PythonSimPayload(); 
 
@@ -57,9 +60,13 @@ public class UDP_SimulatedReceiver : MonoBehaviour
 
     void Update()
     {
+        // Update the UI text every frame with the latest data
         lock (dataLock)
         {
-            if (latestSimData != null) DisplayPayload(latestSimData);
+            if (latestSimData != null) 
+            {
+                DisplayPayload(latestSimData);
+            }
         }
     }
 
@@ -84,10 +91,11 @@ public class UDP_SimulatedReceiver : MonoBehaviour
                 if (simData != null)
                 {
                     // --- STRICTION LOGIC ---
-                    // Ensures -180 to 180 is converted to 0 to 360
+                    // Force -180...180 into 0...360
                     simData.angle_deg = (simData.angle_deg % 360f + 360f) % 360f;
 
                     TrackerPayload converted = ConvertSimToTracker(simData);
+                    
                     lock (dataLock)
                     {
                         latestSimData = simData;
@@ -118,13 +126,23 @@ public class UDP_SimulatedReceiver : MonoBehaviour
     }
 
     #region GETTERS
-    public TrackerPayload GetLatestPayload() { lock (dataLock) return latestTrackerPayload; }
+    public TrackerPayload GetLatestPayload() 
+    { 
+        lock (dataLock) return latestTrackerPayload; 
+    }
     
-    public float GetRudderAngle() { lock (dataLock) return latestSimData != null ? latestSimData.rudder_deg : 0f; }
+    public float GetRudderAngle() 
+    { 
+        lock (dataLock) return latestSimData != null ? latestSimData.rudder_deg : 0f; 
+    }
 
     public float GetWalkingCycleAngle() 
     { 
-        lock (dataLock) return latestSimData != null ? latestSimData.angle_deg : 0f; 
+        lock (dataLock) 
+        {
+            // Just return the raw angle (No Prediction)
+            return latestSimData != null ? -latestSimData.angle_deg : 0f; 
+        }
     }
 
     public Vector3 GetTrackerPosition()
@@ -133,6 +151,7 @@ public class UDP_SimulatedReceiver : MonoBehaviour
         {
             if (latestSimData == null) return playerTransform.position;
 
+            // Use raw angle for position
             float rad = latestSimData.angle_deg * Mathf.Deg2Rad;
             Vector3 localOffset = new Vector3(Mathf.Cos(rad) * radius, height, Mathf.Sin(rad) * radius);
             return playerTransform.position + (playerTransform.rotation * localOffset);
@@ -140,11 +159,15 @@ public class UDP_SimulatedReceiver : MonoBehaviour
     }
     #endregion
 
+    // --- DISPLAY FUNCTION ---
     void DisplayPayload(PythonSimPayload sim)
     {
         if (statusText) 
         {
-            statusText.text = $"Rudder: {sim.rudder_deg:F1}°\nPhase: {sim.angle_deg:F0}°";
+            statusText.text = $"Data Received:\n" +
+                              $"Rudder: {sim.rudder_deg:F1}°\n" +
+                              $"Angle: {sim.angle_deg:F0}°\n" +
+                              $"Speed: {sim.angular_velocity:F1}";
         }
     }
 }

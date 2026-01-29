@@ -4,7 +4,7 @@ public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement")]
     public float speed = 2f;
-    public float climbSmoothing = 8f; 
+    public float climbSmoothing = 4f; // Lowered slightly for smoother climb
 
     [Header("Manual Velocity")]
     public Vector3 velocity = Vector3.zero;
@@ -25,17 +25,18 @@ public class PlayerMovement : MonoBehaviour
     void TrackerMovementControl()
     {
         // 1. CALCULATE WORLD DIRECTION
-        // We assume 'velocity' passed from the controller is Local (e.g. Z=1 is forward)
         Vector3 moveDir = transform.TransformDirection(velocity);
         Vector3 targetMove = moveDir * speed;
 
         // 2. STEP UP LOGIC
-        if (moveDir.magnitude > 0.01f)
+        // Only check for steps if we aren't already climbing (Prevents "Double Jump")
+        if (moveDir.magnitude > 0.01f && smoothYOffset < 0.05f)
         {
             CheckStepUp(moveDir.normalized);
         }
 
         // 3. STEP DOWN / GROUND SNAP
+        // Only snap down if we are NOT climbing
         if (smoothYOffset <= 0.01f) 
         {
             CheckStepDown();
@@ -44,6 +45,7 @@ public class PlayerMovement : MonoBehaviour
         // 4. APPLY VERTICAL SMOOTHING
         if (Mathf.Abs(smoothYOffset) > 0.001f)
         {
+            // We use a smaller lerp factor to make it feel like a "lift" rather than a "snap"
             float moveStep = Mathf.Lerp(0, smoothYOffset, Time.deltaTime * climbSmoothing);
             transform.position += Vector3.up * moveStep;
             smoothYOffset -= moveStep;
@@ -59,24 +61,35 @@ public class PlayerMovement : MonoBehaviour
         // 6. EXECUTE MOVEMENT
         transform.position += targetMove * Time.deltaTime;
 
-        // Store for SyncLegs to use
         lastAppliedVelocity = targetMove;
-        
-        // Reset velocity buffer for next frame
         velocity = Vector3.zero;
     }
 
     void CheckStepUp(Vector3 moveDir)
     {
+        // Define Rays
         Ray lowerRay = new Ray(transform.position + Vector3.up * 0.1f, moveDir);
         Ray kneeRay = new Ray(transform.position + Vector3.up * (stepHeight * 0.5f), moveDir);
         Ray upperRay = new Ray(transform.position + Vector3.up * (stepHeight + 0.05f), moveDir);
 
-        if (Physics.Raycast(lowerRay, stepCheckDistance, groundMask) &&
-            Physics.Raycast(kneeRay, stepCheckDistance, groundMask) &&
-            !Physics.Raycast(upperRay, stepCheckDistance + 0.1f, groundMask))
+        // 1. Check if we hit a wall at the feet
+        if (Physics.Raycast(lowerRay, out RaycastHit lowerHit, stepCheckDistance, groundMask))
         {
-            smoothYOffset += stepHeight;
+            // FIX: Check if it's a WALL (vertical), not a SLOPE (angled).
+            // If the normal is pointing up, it's a floor/ramp. We let physics handle that.
+            // If the normal is horizontal (dot product near 0), it's a step.
+            float wallAngle = Vector3.Angle(Vector3.up, lowerHit.normal);
+            
+            // Only step up if the obstacle is roughly vertical (> 70 degrees)
+            if (wallAngle < 70f) return; 
+
+            // 2. Check Knee and Upper clearance
+            if (Physics.Raycast(kneeRay, stepCheckDistance, groundMask) &&
+                !Physics.Raycast(upperRay, stepCheckDistance + 0.1f, groundMask))
+            {
+                // Trigger the smooth lift
+                smoothYOffset += stepHeight;
+            }
         }
     }
 
