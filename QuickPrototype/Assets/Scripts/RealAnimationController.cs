@@ -5,29 +5,32 @@ public class UDP_LinearController : MonoBehaviour
     [Header("Dependencies")]
     public UDP_SimulatedReceiver udpReceiver;
     public PlayerMovement playerMovement;
-    public PlayerMasterController masterController; // Optional: To check control mode
+    public PlayerMasterController masterController; 
 
     [Header("Movement Settings")]
-    [Tooltip("How far does the character move in ONE step? (Meters)")]
     public float strideLength = 0.5f; 
     
-    [Header("Turning Settings")]
-    [Tooltip("Time to smooth the rudder signal. Higher = Slower, smoother turns.")]
-    public float turnSmoothing = 0.3f; // 0.3s is a good starting point for "heavy" feel
+    [Header("Steering Settings (F1 Style)")]
+    [Tooltip("How fast you turn. If Rudder is at 30° and this is 1.0, you turn 30° per second.")]
+    public float steeringSensitivity = 1.5f; 
+    
+    [Tooltip("Ignore small inputs to prevent drifting when going straight.")]
+    public float steeringDeadzone = 5.0f; // Degrees
 
-    [Header("Speed Smoothing")]
+    [Tooltip("Smooths the input so the turn doesn't feel jerky.")]
+    public float turnInputSmoothing = 0.15f; 
+
+    [Header("Speed Settings")]
     public float speedSmoothing = 0.2f;
-    public float deadzone = 5.0f;
+    public float speedDeadzone = 5.0f;
 
     // Internal State
     private float currentSpeed;
     private float speedRef;
     
-    // Turn State
-    private float smoothedRudderAngle;
-    private float lastFrameRudderAngle;
-    private float turnVelocityRef;
-    private bool isInitialized = false;
+    // Steering State
+    private float currentSteeringAngle; // The smoothed rudder angle
+    private float steeringVelocityRef;
 
     void Start()
     {
@@ -40,57 +43,67 @@ public class UDP_LinearController : MonoBehaviour
     {
         if (!udpReceiver || !playerMovement) return;
 
-        // 1. SAFETY CHECK: Do not move if Keyboard Mode is active
+        // Safety: Disable if manual keyboard mode is on
         if (masterController != null && masterController.activeMode == PlayerMasterController.ControlMode.KeyboardOnly)
             return;
 
-        // ---------------- HANDLING SPEED ----------------
+        HandleMovement();
+        HandleSteering();
+    }
+
+    void HandleMovement()
+    {
+        // --- 1. GET RAW SPEED DATA ---
         float rawAngVel = 0f;
         var payload = udpReceiver.GetLatestPayload();
         if (payload != null) rawAngVel = payload.angular_velocity;
 
-        if (Mathf.Abs(rawAngVel) < deadzone) rawAngVel = 0f;
+        // Deadzone
+        if (Mathf.Abs(rawAngVel) < speedDeadzone) rawAngVel = 0f;
 
-        // Convert Rotations/Sec to Meters/Sec
+        // Math: Convert Wheel RPM to Walking Speed (Meters/Sec)
         float rotationsPerSecond = Mathf.Abs(rawAngVel) / 360f;
         float targetMetersPerSec = rotationsPerSecond * (strideLength * 2.0f);
 
-        // Smooth Speed
+        // Smooth it
         currentSpeed = Mathf.SmoothDamp(currentSpeed, targetMetersPerSec, ref speedRef, speedSmoothing);
         
-        // Apply Forward Velocity
+        // Calculate normalized speed (0 to 1) for the movement script
         float normalizedVelocity = (playerMovement.speed > 0) ? (currentSpeed / playerMovement.speed) : 0;
-        playerMovement.AddVelocity(transform.forward * normalizedVelocity);
+        
+        // APPLY: Use Vector3.forward (Local) to fix the "Backward Bug"
+        playerMovement.AddVelocity(Vector3.forward * normalizedVelocity);
+    }
 
+    void HandleSteering()
+    {
+        // --- 2. GET RAW STEERING DATA ---
+        float rawRudder = udpReceiver.GetRudderAngle(); // e.g., 30 degrees
 
-        // ---------------- HANDLING TURNING (RUDDER) ----------------
-        float rawRudder = udpReceiver.GetRudderAngle();
+        // Deadzone check (If handle is close to center, treat as 0)
+        if (Mathf.Abs(rawRudder) < steeringDeadzone) rawRudder = 0f;
 
-        // Initialization: Prevent spinning on the very first frame if Python starts at 180°
-        if (!isInitialized)
+        // Smooth the input (Dampens the jitter from the sensor)
+        currentSteeringAngle = Mathf.SmoothDamp(currentSteeringAngle, rawRudder, ref steeringVelocityRef, turnInputSmoothing);
+
+        // --- THE F1 LOGIC FIX ---
+        // Instead of calculating "Delta", we use the angle as "Velocity".
+        // Input Angle * Sensitivity * Time = Amount to Turn this frame
+        
+        float turnAmountThisFrame = currentSteeringAngle * steeringSensitivity * Time.deltaTime;
+
+        // Apply Rotation
+        if (Mathf.Abs(turnAmountThisFrame) > 0.001f)
         {
-            smoothedRudderAngle = rawRudder;
-            lastFrameRudderAngle = rawRudder;
-            isInitialized = true;
+            playerMovement.Rotate(turnAmountThisFrame);
+            
+            // Optional: If you want to force the legs to march while turning in place
+            // (Only if we aren't already moving forward)
+            if (currentSpeed < 0.1f && masterController != null)
+            {
+                // Trigger the "Turn In Place" logic we added earlier
+                masterController.Turn(Mathf.Sign(turnAmountThisFrame)); 
+            }
         }
-
-        // 1. Smooth the Input:
-        // Python sends stepped keys (-5, -10). We smooth this into a continuous ramp.
-        // Mathf.SmoothDampAngle handles the 360 wrap-around correctly automatically.
-        smoothedRudderAngle = Mathf.SmoothDampAngle(smoothedRudderAngle, rawRudder, ref turnVelocityRef, turnSmoothing);
-
-        // 2. Calculate Delta:
-        // How much did our "smoothed steering wheel" turn since the last frame?
-        float turnAmount = smoothedRudderAngle - lastFrameRudderAngle;
-
-        // 3. Apply Rotation:
-        // If turnAmount is valid, rotate the body
-        if (Mathf.Abs(turnAmount) > 0.001f)
-        {
-            playerMovement.Rotate(turnAmount);
-        }
-
-        // 4. Update History
-        lastFrameRudderAngle = smoothedRudderAngle;
     }
 }

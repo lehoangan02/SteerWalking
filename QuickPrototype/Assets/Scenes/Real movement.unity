@@ -782,18 +782,19 @@ MonoBehaviour:
   udpReceiver: {fileID: 1279990482}
   playerMovement: {fileID: 733367224}
   detectRange: 0.3
-  stepThreshold: 0.15
+  stepThreshold: 0.2
   showDebugRays: 1
   flatStepHeight: 0.3
   stairStepHeight: 0.5
   downStepHeight: 0.15
   swingReachOffset: 0.3
-  stridePrediction: 0.3
+  stridePrediction: 0.5
   angleOffset: 43
   smoothTime: 10
   hipSwayAmount: 0.05
-  hipTwistAmount: 5
-  footRotRange: 15
+  hipTwistAmount: 0.5
+  footRotRange: 10
+  stanceWidth: 0.2
   footOffset: 0.05
   hipHeight: 1
   forceArmsDown: 1
@@ -843,7 +844,7 @@ MonoBehaviour:
   stairStepHeight: 0.5
   walkStepHeight: 0.3
   stepDownArcHeight: 0.15
-  strideLength: 0.3
+  strideLength: 0.5
   hipHeightOffset: 1
 --- !u!114 &733367229
 MonoBehaviour:
@@ -1780,7 +1781,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &2137506689
 MonoBehaviour:
   m_ObjectHideFlags: 0

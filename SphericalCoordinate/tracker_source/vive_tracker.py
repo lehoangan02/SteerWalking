@@ -10,3 +10,6 @@ class ViveTrackers:
 
     def get_tracker_position(self):
         return self.source.get_tracker_position()
+
+    def get_tracker_rudder_degree(self):
+        return self.source.get_tracker_rudder_degree()

@@ -124,8 +124,8 @@ class TrackerUdpBroadcaster:
         if self.centerV is None or self.ref_pointV is None:
             return
 
-        angle_deg = angle_deg_from_highest(self.centerH, self.ref_pointV, pos)
-        rudder_deg = deg - self.ref_degree
+        angle_deg = angle_deg_from_highest(self.centerV, self.ref_pointV, pos)
+        rudder_deg = deg
         ts = time.time()
         
         dt = ts - self.prev_time if self.prev_time else 0.0

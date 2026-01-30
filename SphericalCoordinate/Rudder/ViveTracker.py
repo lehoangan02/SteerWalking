@@ -18,7 +18,7 @@ class ViveTracker:
             openvr.k_unMaxTrackedDeviceCount
         )
         
-        i = 1
+        i = 4
         if not self.vr.isTrackedDeviceConnected(i):
             print("[ViveTracker] Error: Tracker 2 not found")
             return (0.0, 0.0, 0.0)

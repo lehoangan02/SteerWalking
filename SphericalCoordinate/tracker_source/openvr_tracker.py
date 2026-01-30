@@ -17,7 +17,7 @@ class OpenVRTrackerSource(TrackerSource):
             0,
             openvr.k_unMaxTrackedDeviceCount
         )
-        i = 0
+        i = 1
         if (
             self.vr.isTrackedDeviceConnected(i)
             and self.vr.getTrackedDeviceClass(i) == openvr.TrackedDeviceClass_GenericTracker
@@ -25,6 +25,14 @@ class OpenVRTrackerSource(TrackerSource):
         ):
             m = poses[i].mDeviceToAbsoluteTracking
             return (m[0][3], m[1][3], m[2][3])
+        else:
+            if not self.vr.isTrackedDeviceConnected(i):
+                print("[OpenVRTrackerSource] Error: Tracker not found")
+            elif self.vr.getTrackedDeviceClass(i) != openvr.TrackedDeviceClass_GenericTracker:
+                print("[OpenVRTrackerSource] Error: Device at index ", i, " is not a tracker")
+            elif not poses[i].bPoseIsValid:
+                print("[OpenVRTrackerSource] Error: Tracker pose is invalid")
+
 
         return None
     
