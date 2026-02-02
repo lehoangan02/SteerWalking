@@ -30,7 +30,7 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     {
         // Debug.Log("Move Forward: " + value);
         movement += transform.forward * value;
-        animationState += value * 0.01f;
+        animationState += value * 0.005f;
         animationState = animationState % 1f;
     }
     public void MoveRight(float value)
