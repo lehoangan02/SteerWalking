@@ -5,6 +5,10 @@ using UnityEngine.InputSystem;
 
 public class ErikaArcherControllerCharacter : MonoBehaviour
 {
+    [Header("Option Control Mode")]
+    public bool keyboard;
+    public bool receive;
+    
     private Animator animator;
     Vector3 movement;
     private CharacterController characterController;
@@ -14,6 +18,10 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         movement = Vector3.zero;
         SetStairStatusMaterial(StairStatus.Level);
         characterController = GetComponent<CharacterController>();
+        if (characterController == null)
+        {
+            Debug.LogError("CharacterController component not found on " + gameObject.name);
+        }
     }
     void Update()
     {
@@ -37,6 +45,7 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     }
     private void HandleMovementRequest()
     {
+        // Debug.Log("Movement Vector: " + movement);
         const float speedRatio = 1f;
         characterController.Move(movement * Time.deltaTime * speedRatio);
         float forwardSpeed = Vector3.Dot(movement * speedRatio, transform.forward);
@@ -115,7 +124,7 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
             if (TimeSinceLastClimbDown > climbUpCooldown)
             {
                 IsClimbingDown = false;
-                animator.SetBool("isClimbingDown", false);
+                // animator.SetBool("isClimbingDown", false);
                 SetStairStatusMaterial(StairStatus.Level);
             } else
             {

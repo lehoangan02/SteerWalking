@@ -33,3 +33,10 @@ Port: `9002` (UDP, from Magnetic Encoder (raspberry pi/esp32) to Python backend)
   "angle_deg": 123.45
 }
 ```
+
+## 4. Variable Speed Control Port
+Port: `9003` (UDP, from Python backend to Unity)
+```json
+{
+  "walk_speed": 1.5
+}
