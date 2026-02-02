@@ -951,6 +951,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14a7be6ef19b646b3a40b64f36271494, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ErikaArcherControllerCharacter
+  keyboard: 0
+  receive: 0
   stairStatusMaterials:
   - {fileID: 2100000, guid: efe26027cacc84b409062a6cff9b90c4, type: 2}
   - {fileID: 2100000, guid: 7ec4e7373ac023f42bc829945cdcdf38, type: 2}
@@ -1394,6 +1396,50 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1438783335}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1371274625
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1371274626}
+  - component: {fileID: 1371274627}
+  m_Layer: 0
+  m_Name: WalkSpeedReceiver
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1371274626
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1371274625}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 543450652785418897}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1371274627
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1371274625}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbe436fb003914b90b613a291b9a095b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WalkSpeedReceiver
 --- !u!1001 &1433354659
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2196,6 +2242,7 @@ Transform:
   - {fileID: 751176136957878830}
   - {fileID: 5465940247302160901}
   - {fileID: 602413879}
+  - {fileID: 1371274626}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &544463224794724823
@@ -3549,6 +3596,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14a7be6ef19b646b3a40b64f36271494, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ErikaArcherControllerCharacter
+  keyboard: 0
+  receive: 0
   stairStatusMaterials:
   - {fileID: 2100000, guid: efe26027cacc84b409062a6cff9b90c4, type: 2}
   - {fileID: 2100000, guid: 7ec4e7373ac023f42bc829945cdcdf38, type: 2}
