@@ -53,7 +53,11 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         animator.SetFloat("forwardSpeed", forwardSpeed);
         Debug.Log("Setting SPEED to " + forwardSpeed);
         animator.SetFloat("SPEED", forwardSpeed);
-        animator.Play("Blend Tree", 0, animationState);
+        if (IsClimbingUp) {
+            animator.Play("ClimbStair", 0, animationState);
+        } else {
+            animator.Play("Blend Tree", 0, animationState);
+        }
         movement = Vector3.zero;
     }
     [SerializeField] private List<Material> stairStatusMaterials;

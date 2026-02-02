@@ -951,15 +951,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14a7be6ef19b646b3a40b64f36271494, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ErikaArcherControllerCharacter
+  animationState: 0
   stairStatusMaterials:
   - {fileID: 2100000, guid: efe26027cacc84b409062a6cff9b90c4, type: 2}
   - {fileID: 2100000, guid: 7ec4e7373ac023f42bc829945cdcdf38, type: 2}
   - {fileID: 2100000, guid: f1e38594f14520c48bc546f3a41f4f56, type: 2}
-  UpStairStepRayUpper: {fileID: 660651137883424528}
-  UpStairStepRayLower: {fileID: 8382164073308213350}
-  DownStairStepRayUpper: {fileID: 1993828373}
-  DownStairStepRayLower: {fileID: 403400254}
-  DebugSphere: {fileID: 3770831365015977498}
+  UpStairStepRayUpper: {fileID: 1331926345}
+  UpStairStepRayLower: {fileID: 878965642}
+  DownStairStepRayUpper: {fileID: 161369275}
+  DownStairStepRayLower: {fileID: 1959961170}
+  DebugSphere: {fileID: 1886523820}
   upRayLowerDistance: 0.4
   upRayUpperDistance: 0.6
   downRayLowerDistance: 0.4
@@ -3597,6 +3598,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14a7be6ef19b646b3a40b64f36271494, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ErikaArcherControllerCharacter
+  animationState: 0
   stairStatusMaterials:
   - {fileID: 2100000, guid: efe26027cacc84b409062a6cff9b90c4, type: 2}
   - {fileID: 2100000, guid: 7ec4e7373ac023f42bc829945cdcdf38, type: 2}
