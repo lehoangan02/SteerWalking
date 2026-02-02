@@ -5,9 +5,6 @@ using UnityEngine.InputSystem;
 
 public class ErikaArcherControllerCharacter : MonoBehaviour
 {
-    [Header("Option Control Mode")]
-    public bool keyboard;
-    public bool receive;
     
     private Animator animator;
     Vector3 movement;
@@ -33,6 +30,8 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     {
         // Debug.Log("Move Forward: " + value);
         movement += transform.forward * value;
+        animationState += value * 0.01f;
+        animationState = animationState % 1f;
     }
     public void MoveRight(float value)
     {
@@ -43,6 +42,7 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     {
         transform.Rotate(Vector3.up * angle * 180f * Time.deltaTime);
     }
+    public float animationState = 0f;
     private void HandleMovementRequest()
     {
         // Debug.Log("Movement Vector: " + movement);
@@ -51,6 +51,9 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         float forwardSpeed = Vector3.Dot(movement * speedRatio, transform.forward);
         // Debug.Log("forwardSpeed: " + forwardSpeed);
         animator.SetFloat("forwardSpeed", forwardSpeed);
+        Debug.Log("Setting SPEED to " + forwardSpeed);
+        animator.SetFloat("SPEED", forwardSpeed);
+        animator.Play("Blend Tree", 0, animationState);
         movement = Vector3.zero;
     }
     [SerializeField] private List<Material> stairStatusMaterials;

@@ -3,7 +3,12 @@ using UnityEngine.InputSystem;
 
 public class InputManager : MonoBehaviour
 {
+    [Header("Option Control Mode")]
+    public bool keyboard;
+    public bool receive;
+    
     [SerializeField] private ErikaArcherControllerCharacter erikaArcherController;
+    [SerializeField] private WalkSpeedReceiver walkSpeedReceiver;
     public static InputManager Instance { get; private set; }
     void Awake()
     {
@@ -24,7 +29,8 @@ public class InputManager : MonoBehaviour
 
     void Update()
     {
-        HandleKeyboardInput();
+        if (keyboard) HandleKeyboardInput();
+        if (receive) HandleReceiveInput();
     }
     private void HandleKeyboardInput()
     {
@@ -48,5 +54,10 @@ public class InputManager : MonoBehaviour
             // Debug.Log("Move Right");
             erikaArcherController.Rotate(0.5f);
         }
+    }
+    private void HandleReceiveInput()
+    {
+        float walkSpeed = walkSpeedReceiver.GetSpeed();
+        erikaArcherController.MoveForward(walkSpeed);
     }
 }
