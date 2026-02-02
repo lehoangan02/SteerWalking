@@ -27,11 +27,7 @@ public class UDP_SimulatedReceiver : MonoBehaviour
     [SerializeField] private float radius = 0.3f; 
     [SerializeField] private float height = 0.1f;
 
-    [Header("Dead Reckoning Settings")]
-    [Tooltip("If no packet arrives for this long, stop predicting (safety)")]
-    public float maxPredictionTime = 0.5f;
-
-    [Header("UI")]
+    [Header("UI Debug")]
     [SerializeField] private TextMeshProUGUI statusText;
 
     private UdpClient udpClient;
@@ -39,15 +35,15 @@ public class UDP_SimulatedReceiver : MonoBehaviour
     private bool running;
     private readonly object dataLock = new object();
     
+    // Data containers
     private PythonSimPayload latestSimData; 
     private TrackerPayload latestTrackerPayload;
-    
-    // Dead Reckoning variables
-    private float lastPacketReceiveTime;
 
     void Start()
     {
         if (playerTransform == null) playerTransform = transform;
+        
+        // Init with empty data to avoid null errors
         latestTrackerPayload = new TrackerPayload { trackers = new TrackerData[0] };
         latestSimData = new PythonSimPayload(); 
 
@@ -64,9 +60,13 @@ public class UDP_SimulatedReceiver : MonoBehaviour
 
     void Update()
     {
+        // Update the UI text every frame with the latest data
         lock (dataLock)
         {
-            if (latestSimData != null) DisplayPayload(latestSimData);
+            if (latestSimData != null) 
+            {
+                DisplayPayload(latestSimData);
+            }
         }
     }
 
@@ -91,15 +91,15 @@ public class UDP_SimulatedReceiver : MonoBehaviour
                 if (simData != null)
                 {
                     // --- STRICTION LOGIC ---
+                    // Force -180...180 into 0...360
                     simData.angle_deg = (simData.angle_deg % 360f + 360f) % 360f;
 
                     TrackerPayload converted = ConvertSimToTracker(simData);
+                    
                     lock (dataLock)
                     {
                         latestSimData = simData;
                         latestTrackerPayload = converted;
-                        // RECORD TIME for Dead Reckoning
-                        lastPacketReceiveTime = Time.time; 
                     }
                 }
             }
@@ -126,52 +126,48 @@ public class UDP_SimulatedReceiver : MonoBehaviour
     }
 
     #region GETTERS
-    public TrackerPayload GetLatestPayload() { lock (dataLock) return latestTrackerPayload; }
+    public TrackerPayload GetLatestPayload() 
+    { 
+        lock (dataLock) return latestTrackerPayload; 
+    }
     
-    public float GetRudderAngle() { lock (dataLock) return latestSimData != null ? latestSimData.rudder_deg : 0f; }
+    public float GetRudderAngle() 
+    { 
+        lock (dataLock) return latestSimData != null ? latestSimData.rudder_deg : 0f; 
+    }
 
-    // --- UPDATED WITH DEAD RECKONING ---
     public float GetWalkingCycleAngle() 
     { 
         lock (dataLock) 
         {
-            if (latestSimData == null) return 0f;
-
-            float timeSinceLastPacket = Time.time - lastPacketReceiveTime;
-
-            // If the data is too old, stop predicting
-            if (timeSinceLastPacket > maxPredictionTime)
-                return latestSimData.angle_deg;
-
-            // DEAD RECKONING FORMULA: Angle + (Velocity * Time)
-            float predictedAngle = latestSimData.angle_deg + (latestSimData.angular_velocity * timeSinceLastPacket);
-            
-            // Return normalized 0-360
-            return (predictedAngle % 360f + 360f) % 360f;
+            // Just return the raw angle (No Prediction)
+            return latestSimData != null ? -latestSimData.angle_deg : 0f; 
         }
     }
 
-    // --- UPDATED WITH DEAD RECKONING ---
     public Vector3 GetTrackerPosition()
     {
         lock (dataLock)
         {
-            // We use the Predicted Angle instead of the raw data for a smooth 60fps position
-            float predictedAngle = GetWalkingCycleAngle();
-            float rad = predictedAngle * Mathf.Deg2Rad;
-            
+            if (latestSimData == null) return playerTransform.position;
+
+            // Use raw angle for position
+            float rad = latestSimData.angle_deg * Mathf.Deg2Rad;
             Vector3 localOffset = new Vector3(Mathf.Cos(rad) * radius, height, Mathf.Sin(rad) * radius);
             return playerTransform.position + (playerTransform.rotation * localOffset);
         }
     }
     #endregion
 
+    // --- DISPLAY FUNCTION ---
     void DisplayPayload(PythonSimPayload sim)
     {
         if (statusText) 
         {
-            // Display the Predicted angle in the UI so you can see it moving smoothly
-            statusText.text = $"Rudder: {sim.rudder_deg:F1}°\nPhase (Pred): {GetWalkingCycleAngle():F0}°";
+            statusText.text = $"Data Received:\n" +
+                              $"Rudder: {sim.rudder_deg:F1}°\n" +
+                              $"Angle: {sim.angle_deg:F0}°\n" +
+                              $"Speed: {sim.angular_velocity:F1}";
         }
     }
 }

@@ -222,7 +222,7 @@ if __name__ == "__main__":
             else:
                 print("No trackers detected")
 
-            time.sleep(0.02)
+            time.sleep(0.3)
 
     except KeyboardInterrupt:
         print("\nShutting down...")

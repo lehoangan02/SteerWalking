@@ -95,7 +95,7 @@ class Cycle3DSimulator:
 
     def send_udp_angle(self, angle_deg, angular_velocity_deg_s, rudder_deg):
         payload = {
-            "angle_deg": float(angle_deg),
+            "angle_deg": float(-angle_deg),
             "angular_velocity": float(angular_velocity_deg_s),
             "rudder_deg": float(rudder_deg),
             "ts": time.time(),
