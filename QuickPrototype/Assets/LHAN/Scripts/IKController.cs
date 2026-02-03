@@ -7,9 +7,11 @@ public class IKController : MonoBehaviour
     private Animator animator;
     [SerializeField] private ErikaArcherControllerCharacter characterControllerCharacter;
     private float phase = 0f;
+    private GameObject parentObject;
     void Start()
     {
         animator = characterControllerCharacter.animator;
+        parentObject = characterControllerCharacter.gameObject;
     }
 
 
@@ -20,9 +22,10 @@ public class IKController : MonoBehaviour
     }
     void OnDrawGizmos()
     {
+        if (IKCenter == null || parentObject == null) return;
         Gizmos.color = Color.green;
         Vector3 center = IKCenter.transform.position;
-        Vector3 normal = IKCenter.transform.right;
+        Vector3 normal = parentObject.transform.right;
         DrawCircle(center, normal, Radius, phase);
     }
     private void DrawCircle(Vector3 center, Vector3 normal, float radius, float phase)
