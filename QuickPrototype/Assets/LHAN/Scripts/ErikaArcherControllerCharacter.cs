@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 public class ErikaArcherControllerCharacter : MonoBehaviour
 {
     
-    private Animator animator;
+    public Animator animator;
     Vector3 movement;
     private CharacterController characterController;
     [Header("Draw Gizmos")]
