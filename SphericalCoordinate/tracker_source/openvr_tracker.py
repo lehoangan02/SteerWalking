@@ -37,4 +37,4 @@ class OpenVRTrackerSource(TrackerSource):
         return None
     
     def get_tracker_rudder_degree(self):
-        return self.rudder_manager.get_rudder_degree("ViveTracker2")
+        return self.rudder_manager.get_rudder_degree("MagneticEncoder")
