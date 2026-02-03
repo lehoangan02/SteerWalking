@@ -27,6 +27,7 @@ public class ErikaArcherController : MonoBehaviour
     {
         // Debug.Log("Move Forward: " + value);
         movement += transform.forward * value;
+        animationState += value * 0.1f;
     }
     public void MoveRight(float value)
     {
@@ -37,6 +38,7 @@ public class ErikaArcherController : MonoBehaviour
     {
         rb.MoveRotation(rb.rotation * Quaternion.Euler(Vector3.up * angle));
     }
+    private float animationState = 0f;
     private void HandleMovementRequest()
     {
         const float speedRatio = 1f;
@@ -44,6 +46,9 @@ public class ErikaArcherController : MonoBehaviour
         float forwardSpeed = Vector3.Dot(movement * speedRatio, transform.forward);
         // Debug.Log("forwardSpeed: " + forwardSpeed);
         animator.SetFloat("forwardSpeed", forwardSpeed);
+        Debug.Log("Setting SPEED to " + forwardSpeed);
+        animator.SetFloat("SPEED", forwardSpeed);
+        animator.Play("Blend Tree", 0, animationState);
         movement = Vector3.zero;
     }
     [SerializeField] private List<Material> stairStatusMaterials;

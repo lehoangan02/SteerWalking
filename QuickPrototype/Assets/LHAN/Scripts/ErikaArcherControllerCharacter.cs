@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 
 public class ErikaArcherControllerCharacter : MonoBehaviour
 {
+    
     private Animator animator;
     Vector3 movement;
     private CharacterController characterController;
@@ -14,6 +15,10 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         movement = Vector3.zero;
         SetStairStatusMaterial(StairStatus.Level);
         characterController = GetComponent<CharacterController>();
+        if (characterController == null)
+        {
+            Debug.LogError("CharacterController component not found on " + gameObject.name);
+        }
     }
     void Update()
     {
@@ -25,6 +30,8 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     {
         // Debug.Log("Move Forward: " + value);
         movement += transform.forward * value;
+        animationState += value * 0.005f;
+        animationState = animationState % 1f;
     }
     public void MoveRight(float value)
     {
@@ -35,13 +42,22 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     {
         transform.Rotate(Vector3.up * angle * 180f * Time.deltaTime);
     }
+    public float animationState = 0f;
     private void HandleMovementRequest()
     {
+        // Debug.Log("Movement Vector: " + movement);
         const float speedRatio = 1f;
         characterController.Move(movement * Time.deltaTime * speedRatio);
         float forwardSpeed = Vector3.Dot(movement * speedRatio, transform.forward);
         // Debug.Log("forwardSpeed: " + forwardSpeed);
         animator.SetFloat("forwardSpeed", forwardSpeed);
+        Debug.Log("Setting SPEED to " + forwardSpeed);
+        animator.SetFloat("SPEED", forwardSpeed);
+        if (IsClimbingUp) {
+            animator.Play("ClimbStair", 0, animationState);
+        } else {
+            animator.Play("Blend Tree", 0, animationState);
+        }
         movement = Vector3.zero;
     }
     [SerializeField] private List<Material> stairStatusMaterials;
@@ -115,7 +131,7 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
             if (TimeSinceLastClimbDown > climbUpCooldown)
             {
                 IsClimbingDown = false;
-                animator.SetBool("isClimbingDown", false);
+                // animator.SetBool("isClimbingDown", false);
                 SetStairStatusMaterial(StairStatus.Level);
             } else
             {
