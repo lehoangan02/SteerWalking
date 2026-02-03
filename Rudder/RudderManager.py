@@ -1,13 +1,14 @@
 import json
 from ViveTracker import ViveTracker
 from RotaryEncoderReceiver import RotaryEncoderReceiver
+from MagneticEncoderReceiver import MagneticEncoderReceiver
 
 
 class RudderManager:
     def __init__(self):
         self.vive_tracker = ViveTracker()
         self.rotary_encoder = RotaryEncoderReceiver()
-        self.magnetic_encoder = None  # Not yet implemented
+        self.magnetic_encoder = MagneticEncoderReceiver()
 
     def get_rudder_degree(self, source):
         """
@@ -28,7 +29,7 @@ class RudderManager:
             return state["rotate"]
         
         elif source == "MagneticEncoder":
-            raise NotImplementedError("MagneticEncoder not yet implemented")
+            state = MagneticEncoderReceiver.get()
         
         else:
             raise ValueError(f"Unknown source: {source}. Options: ViveTracker2, RotaryEncoder, MagneticEncoder")
