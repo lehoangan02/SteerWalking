@@ -1,7 +1,7 @@
 import json
-from ViveTracker import ViveTracker
-from RotaryEncoderReceiver import RotaryEncoderReceiver
-from MagneticEncoderReceiver import MagneticEncoderReceiver
+from .ViveTracker import ViveTracker
+from .RotaryEncoderReceiver import RotaryEncoderReceiver
+from .MagneticEncoderReceiver import MagneticEncoderReceiver
 
 
 class RudderManager:
