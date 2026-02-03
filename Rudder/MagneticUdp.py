@@ -55,6 +55,8 @@ class MagneticEncoder:
         try:
             while True:
                 angle = self.read_angle()
+                if angle > 180.0:
+                    angle -= 360.0
                 md, ml, mh = self.read_status()
                 signal = self.get_status_string(md, ml, mh)
                 
