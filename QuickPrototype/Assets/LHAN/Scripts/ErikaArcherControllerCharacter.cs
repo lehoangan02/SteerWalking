@@ -9,6 +9,9 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     private Animator animator;
     Vector3 movement;
     private CharacterController characterController;
+    [Header("Draw Gizmos")]
+    [SerializeField] private bool DrawGizmos = false;
+    
     void Start()
     {
         animator = GetComponent<Animator>();
@@ -171,6 +174,7 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     }
     private void OnDrawGizmos()
     {
+        if (!DrawGizmos) return;
         DrawRayDebug(UpStairStepRayLower, transform.forward, upRayLowerDistance, Color.green);
         DrawRayDebug(UpStairStepRayUpper, transform.forward, upRayUpperDistance, Color.yellow);
         DrawRayDebug(DownStairStepRayLower, -transform.forward, downRayLowerDistance, Color.cyan);

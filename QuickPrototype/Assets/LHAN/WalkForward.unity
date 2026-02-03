@@ -951,6 +951,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14a7be6ef19b646b3a40b64f36271494, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ErikaArcherControllerCharacter
+  DrawGizmos: 0
   animationState: 0
   stairStatusMaterials:
   - {fileID: 2100000, guid: efe26027cacc84b409062a6cff9b90c4, type: 2}
@@ -1585,6 +1586,37 @@ Transform:
   m_Children:
   - {fileID: 1371274626}
   m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1538816832
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1538816833}
+  m_Layer: 0
+  m_Name: IKCenter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1538816833
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1538816832}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.01, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 543450652785418897}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1754021235 stripped
 Transform:
@@ -2245,6 +2277,7 @@ Transform:
   - {fileID: 751176136957878830}
   - {fileID: 5465940247302160901}
   - {fileID: 602413879}
+  - {fileID: 1538816833}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &544463224794724823
@@ -2527,6 +2560,7 @@ GameObject:
   - component: {fileID: 914867580}
   - component: {fileID: 914867581}
   - component: {fileID: 914867583}
+  - component: {fileID: 919132148861696044}
   m_Layer: 0
   m_Name: X Bot
   m_TagString: Untagged
@@ -2534,6 +2568,20 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &919132148861696044
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 919132148861696043}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2c567c905df546cead5da2702653ac7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::IKController
+  IKCenter: {fileID: 1538816832}
+  Radius: 0.3
 --- !u!1 &1027973692169203148
 GameObject:
   m_ObjectHideFlags: 0
@@ -3598,6 +3646,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14a7be6ef19b646b3a40b64f36271494, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ErikaArcherControllerCharacter
+  DrawGizmos: 0
   animationState: 0
   stairStatusMaterials:
   - {fileID: 2100000, guid: efe26027cacc84b409062a6cff9b90c4, type: 2}
