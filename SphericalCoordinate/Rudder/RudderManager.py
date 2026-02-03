@@ -1,7 +1,7 @@
 import json
-from ViveTracker import ViveTracker
-from RotaryEncoderReceiver import RotaryEncoderReceiver
-from MagneticEncoderReceiver import MagneticEncoderReceiver
+from .ViveTracker import ViveTracker
+from .RotaryEncoderReceiver import RotaryEncoderReceiver
+from .MagneticEncoderReceiver import MagneticEncoderReceiver
 
 
 class RudderManager:
@@ -29,7 +29,8 @@ class RudderManager:
             return state["rotate"]
         
         elif source == "MagneticEncoder":
-            state = MagneticEncoderReceiver.get()
+            state = self.magnetic_encoder.get()
+            return state["angle_deg"]
         
         else:
             raise ValueError(f"Unknown source: {source}. Options: ViveTracker2, RotaryEncoder, MagneticEncoder")

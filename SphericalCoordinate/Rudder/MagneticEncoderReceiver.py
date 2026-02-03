@@ -24,9 +24,25 @@ class MagneticEncoderReceiver:
 
         # protect access to `state`
         self._lock = threading.Lock()
+        
+        # statistics for debugging
+        self.packets_received = 0
+        self.packets_dropped = 0
+        self.last_error = None
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.bind(("", port))
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Allow reuse
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1024 * 1024)  # 1MB buffer
+        
+        # For broadcast reception on Windows
+        if sys.platform == "win32":
+            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        
+        self.sock.bind(("", port))  # Bind to all interfaces
+        self.sock.settimeout(1.0)  # 1 second timeout
+        
+        # print(f"[MagneticEncoderReceiver] Listening on 0.0.0.0:{port}")
+        # print(f"[MagneticEncoderReceiver] Platform: {sys.platform}")
 
         self.thread = threading.Thread(target=self._listen, daemon=True)
         self.thread.start()
@@ -37,31 +53,49 @@ class MagneticEncoderReceiver:
             self._kbd_thread.start()
 
     def _listen(self):
-        # Set socket to non-blocking to drain buffer
-        self.sock.setblocking(False)
-        
+        # print("[MagneticEncoderReceiver] Listen thread started")
+        first_packet = True
         while True:
             try:
-                # Read all pending packets, keep only the latest
-                latest_data = None
-                while True:
-                    try:
-                        data, _ = self.sock.recvfrom(1024)
-                        latest_data = data
-                    except BlockingIOError:
-                        # No more data available
-                        break
+                # Use blocking receive with timeout
+                data, addr = self.sock.recvfrom(1024)
                 
-                if latest_data:
-                    msg = json.loads(latest_data.decode())
+                try:
+                    msg = json.loads(data.decode('utf-8'))
                     if msg.get("type") == "input":
                         angle_deg = msg.get("angle_deg", 0.0)
                         with self._lock:
                             self.state["angle_deg"] = angle_deg
-                
-                time.sleep(0.001)  # Small sleep to prevent CPU spinning
+                            self.packets_received += 1
+                        
+                        if first_packet:
+                            # print(f"[RX] ✓ First packet received from {addr[0]}:{addr[1]}")
+                            first_packet = False
+                        
+                        if self.packets_received % 10 == 0:  # Log every 10th packet
+                            pass
+                            # print(f"[RX] Angle: {angle_deg:.1f}° | Total packets: {self.packets_received}")
+                    else:
+                        pass
+                        # print(f"[RX] Unknown message type: {msg.get('type')}")
+                except json.JSONDecodeError as e:
+                    pass
+                    # print(f"[RX] JSON decode error: {e}, data: {data[:50]}")
+                    with self._lock:
+                        self.packets_dropped += 1
+                except ValueError as e:
+                    # print(f"[RX] Value error: {e}")
+                    with self._lock:
+                        self.packets_dropped += 1
+                        
+            except socket.timeout:
+                # Timeout is normal, just continue listening
+                pass
             except Exception as e:
-                time.sleep(0.01)
+                # print(f"[RX] Socket error: {type(e).__name__}: {e}")
+                with self._lock:
+                    self.last_error = str(e)
+                time.sleep(0.1)
 
     def _keyboard_listener(self):
         # simple Windows console keylistener: q -> left, e -> right
@@ -85,6 +119,15 @@ class MagneticEncoderReceiver:
     def get(self):
         with self._lock:
             return self.state.copy()
+    
+    def get_stats(self):
+        """Return reception statistics for debugging."""
+        with self._lock:
+            return {
+                "packets_received": self.packets_received,
+                "packets_dropped": self.packets_dropped,
+                "last_error": self.last_error
+            }
 
 
 def draw_compass(screen, angle_deg, width=800, height=600):
@@ -134,7 +177,7 @@ def draw_compass(screen, angle_deg, width=800, height=600):
 
 if __name__ == "__main__":
     if pygame is None:
-        print("pygame not installed. Install with: pip install pygame")
+        # print("pygame not installed. Install with: pip install pygame")
         sys.exit(1)
     
     pygame.init()
@@ -143,7 +186,7 @@ if __name__ == "__main__":
     pygame.display.set_caption("Magnetic Encoder Compass")
     clock = pygame.time.Clock()
     
-    print("Starting Magnetic Encoder Receiver on port 9002...")
+    # print("Starting Magnetic Encoder Receiver on port 9002...")
     receiver = MagneticEncoderReceiver(port=9002)
     
     running = True
@@ -153,11 +196,21 @@ if __name__ == "__main__":
                 running = False
         
         state = receiver.get()
+        stats = receiver.get_stats()
         
         screen.fill((255, 255, 255))
         draw_compass(screen, state['angle_deg'], WIDTH, HEIGHT)
+        
+        # Draw stats
+        font_small = pygame.font.Font(None, 24)
+        stats_text = f"RX: {stats['packets_received']} | Dropped: {stats['packets_dropped']}"
+        if stats['last_error']:
+            stats_text += f" | Error: {stats['last_error'][:30]}"
+        text_surface = font_small.render(stats_text, True, (0, 0, 0))
+        screen.blit(text_surface, (10, 10))
+        
         pygame.display.flip()
         clock.tick(60)
     
     pygame.quit()
-    print("Shutdown")
+    # print("Shutdown")
