@@ -37,16 +37,31 @@ class MagneticEncoderReceiver:
             self._kbd_thread.start()
 
     def _listen(self):
+        # Set socket to non-blocking to drain buffer
+        self.sock.setblocking(False)
+        
         while True:
-            data, _ = self.sock.recvfrom(1024)
-            msg = json.loads(data.decode())
-
-            if msg.get("type") == "input":
-                angle_deg = msg.get("angle_deg", 0.0)
-
-                with self._lock:
-                    self.state["angle_deg"] = angle_deg
-                    # print("Magnetic encoder state:", self.state)
+            try:
+                # Read all pending packets, keep only the latest
+                latest_data = None
+                while True:
+                    try:
+                        data, _ = self.sock.recvfrom(1024)
+                        latest_data = data
+                    except BlockingIOError:
+                        # No more data available
+                        break
+                
+                if latest_data:
+                    msg = json.loads(latest_data.decode())
+                    if msg.get("type") == "input":
+                        angle_deg = msg.get("angle_deg", 0.0)
+                        with self._lock:
+                            self.state["angle_deg"] = angle_deg
+                
+                time.sleep(0.001)  # Small sleep to prevent CPU spinning
+            except Exception as e:
+                time.sleep(0.01)
 
     def _keyboard_listener(self):
         # simple Windows console keylistener: q -> left, e -> right
