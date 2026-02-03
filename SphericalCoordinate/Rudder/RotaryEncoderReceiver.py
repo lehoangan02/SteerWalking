@@ -60,11 +60,11 @@ class RotaryEncoderReceiver:
                 if key.lower() == 'q':
                     with self._lock:
                         self.state['rotate'] -= DEGREES_PER_STATE
-                        print(f"Rudder rotate -> {self.state['rotate']}")
+                        # print(f"Rudder rotate -> {self.state['rotate']}")
                 elif key.lower() == 'e':
                     with self._lock:
                         self.state['rotate'] += DEGREES_PER_STATE
-                        print(f"Rudder rotate -> {self.state['rotate']}")
+                        # print(f"Rudder rotate -> {self.state['rotate']}")
             else:
                 # avoid busy loop
                 time.sleep(0.05)

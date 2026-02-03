@@ -47,7 +47,10 @@ class MagneticEncoder:
             "angle_deg": angle_deg
         }
         data = json.dumps(message).encode()
-        self.sock.sendto(data, (self.udp_host, self.udp_port))
+        try:
+            self.sock.sendto(data, (self.udp_host, self.udp_port))
+        except Exception as e:
+            print(f"[TX ERROR] Failed to send to {self.udp_host}:{self.udp_port}: {e}")
     
     def run(self, interval=0.01):
         """Main loop: read sensor and send data via UDP."""
