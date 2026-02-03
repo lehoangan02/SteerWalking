@@ -9,6 +9,8 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     public Animator animator;
     Vector3 movement;
     private CharacterController characterController;
+    [SerializeField] private GameObject IKCenter;
+    [SerializeField] private float Radius = 0.5f;
     [Header("Draw Gizmos")]
     [SerializeField] private bool DrawGizmos = false;
     
@@ -54,7 +56,7 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         float forwardSpeed = Vector3.Dot(movement * speedRatio, transform.forward);
         // Debug.Log("forwardSpeed: " + forwardSpeed);
         animator.SetFloat("forwardSpeed", forwardSpeed);
-        Debug.Log("Setting SPEED to " + forwardSpeed);
+        // Debug.Log("Setting SPEED to " + forwardSpeed);
         animator.SetFloat("SPEED", forwardSpeed);
         if (IsClimbingUp) {
             animator.Play("ClimbStair", 0, animationState);
@@ -188,4 +190,5 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         Gizmos.DrawWireSphere(origin, rayDebugSphereRadius);
         Gizmos.DrawLine(origin, origin + direction.normalized * length);
     }
+    
 }
