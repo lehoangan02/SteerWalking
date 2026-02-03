@@ -5,7 +5,7 @@ import json
 
 
 class MagneticEncoder:
-    def __init__(self, bus_num=1, addr=0x36, udp_host="255.255.255.255", udp_port=9002):
+    def __init__(self, bus_num=1, addr=0x36, udp_host="<broadcast>", udp_port=9002):
         self.bus = smbus.SMBus(bus_num)
         self.addr = addr
         self.udp_host = udp_host
