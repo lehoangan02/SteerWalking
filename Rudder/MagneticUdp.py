@@ -49,7 +49,7 @@ class MagneticEncoder:
         data = json.dumps(message).encode()
         self.sock.sendto(data, (self.udp_host, self.udp_port))
     
-    def run(self, interval=0.05):
+    def run(self, interval=0.01):
         """Main loop: read sensor and send data via UDP."""
         print(f"Starting Magnetic Encoder (sending to {self.udp_host}:{self.udp_port})")
         try:
