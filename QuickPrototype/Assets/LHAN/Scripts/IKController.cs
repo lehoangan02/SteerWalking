@@ -4,6 +4,7 @@ public class IKController : MonoBehaviour
 {
     [SerializeField] private GameObject IKCenter;
     [SerializeField] private float Radius = 0.5f;
+    [SerializeField] private GameObject barrierObject; 
     private Animator animator;
     [SerializeField] private ErikaArcherControllerCharacter characterControllerCharacter;
     private float phase = 0f;
@@ -57,8 +58,10 @@ public class IKController : MonoBehaviour
         Gizmos.DrawLine(center, phasePoint);
         Gizmos.DrawSphere(phasePoint, 0.05f);
 
-        float maxHeight = radius * 0.2f;
-        Vector3 elevatedPoint = phasePoint;
+    }
+    private float intersectionPhase() {
+        float barrierSize = barrierObject.transform.localScale.z;
+        float circleSize = Radius * 2f;
     }
     private void OnAnimatorIK(int layerIndex)
     {
@@ -75,7 +78,29 @@ public class IKController : MonoBehaviour
         
         // Calculate target position based on phase
         float phaseAngle = -phase * 360f * Mathf.Deg2Rad;
-        Vector3 targetPosition = center + (right * Mathf.Cos(phaseAngle) + forward * Mathf.Sin(phaseAngle)) * Radius;
+        Vector3 circlePosition = center + (right * Mathf.Cos(phaseAngle) + forward * Mathf.Sin(phaseAngle)) * Radius;
+        // Raycast downwards from circlePosition to find the gait barrier position
+        RaycastHit hit;
+        circlePosition.y = 0;
+        Vector3 targetPosition;
+        if (phase < 0.5f)
+        {
+            targetPosition = circlePosition;
+        } else {
+            if (Physics.Raycast(circlePosition, Vector3.up, out hit, 1f))
+            {
+                if (hit.collider.gameObject == barrierObject)
+                {
+                    targetPosition = hit.point;
+                } else
+                {
+                    targetPosition = circlePosition;
+                }
+            } else {
+                targetPosition = circlePosition;
+            }
+        }
+        
         
         // Offset right foot 0.1f to the right
         Vector3 rightFootPosition = targetPosition + normal * 0.1f;
