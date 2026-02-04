@@ -22,7 +22,7 @@ public class IKController : MonoBehaviour
     }
     void OnDrawGizmos()
     {
-        if (IKCenter == null || parentObject == null) return;
+        
         Gizmos.color = Color.green;
         Vector3 center = IKCenter.transform.position;
         Vector3 normal = IKCenter.transform.right;
