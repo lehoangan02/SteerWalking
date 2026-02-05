@@ -16,6 +16,8 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     
     void Start()
     {
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 60;
         animator = GetComponent<Animator>();
         movement = Vector3.zero;
         SetStairStatusMaterial(StairStatus.Level);
@@ -35,7 +37,7 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     {
         // Debug.Log("Move Forward: " + value);
         movement += transform.forward * value;
-        animationState += value * 0.005f;
+        animationState += value * 0.9f * Time.deltaTime;
         animationState = animationState % 1f;
         if (animationState < 0f) animationState += 1f;
     }
