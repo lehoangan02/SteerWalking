@@ -91,7 +91,8 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     {
         if (!IsMovingForward()) return;
         RaycastHit hitLower;
-        if (Physics.Raycast(UpStairStepRayLower.transform.position, transform.forward, out hitLower, upRayLowerDistance))
+        if (Physics.Raycast(UpStairStepRayLower.transform.position, transform.forward, out hitLower, upRayLowerDistance)
+        && hitLower.collider.name != "GaitBarrier")
         {
             Debug.Log("Hit Lower Step: " + hitLower.collider.name);
             if (!Physics.Raycast(UpStairStepRayUpper.transform.position, transform.forward, upRayUpperDistance))
@@ -156,7 +157,7 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         Renderer renderer = DebugSphere.GetComponent<Renderer>();
         renderer.material = stairStatusMaterials[(int)status];
     }
-    private bool IsClimbingUp = false;
+    public bool IsClimbingUp = false;
     private bool IsClimbingDown = false;
     private float TimeSinceLastClimbUp = 0f;
     private float TimeSinceLastClimbDown = 0f;

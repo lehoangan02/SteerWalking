@@ -70,6 +70,7 @@ public class IKController : MonoBehaviour
         // Debug.Log("Intersection phase: " + res);
         return res;
     }
+    public bool rightFootOnBarrier = false;
     public bool leftFootOnBarrier = false;
     private void OnAnimatorIK(int layerIndex)
     {
@@ -89,23 +90,31 @@ public class IKController : MonoBehaviour
         Vector3 circlePosition = center + (right * Mathf.Cos(phaseAngle) + forward * Mathf.Sin(phaseAngle)) * Radius;
         // Raycast downwards from circlePosition to find the gait barrier position
         RaycastHit hit;
+        float currentY = circlePosition.y;
         circlePosition.y = 0;
         Vector3 targetPosition;
         if (phase < intersectionPhase())
         {
+            circlePosition.y = currentY;
             targetPosition = circlePosition;
+            rightFootOnBarrier = false;
         } else {
             if (Physics.Raycast(circlePosition, Vector3.up, out hit, 1f))
             {
                 if (hit.collider.gameObject == barrierObject)
                 {
                     targetPosition = hit.point;
+                    rightFootOnBarrier = true;
                 } else
                 {
+                    circlePosition.y = currentY;
                     targetPosition = circlePosition;
+                    rightFootOnBarrier = false;
                 }
             } else {
+                circlePosition.y = currentY;
                 targetPosition = circlePosition;
+                rightFootOnBarrier = false;
             }
         }
         
@@ -122,6 +131,7 @@ public class IKController : MonoBehaviour
         animator.SetIKRotation(AvatarIKGoal.RightFoot, IKCenter.transform.rotation);
 
         Vector3 oppositeCirclePosition = center + (right * Mathf.Cos(phaseAngle + Mathf.PI) + forward * Mathf.Sin(phaseAngle + Mathf.PI)) * Radius;
+        float oppositeCurrentY = oppositeCirclePosition.y;
         oppositeCirclePosition.y = 0;
         RaycastHit hitOpposite;
         Vector3 oppositeTargetPosition;
@@ -136,14 +146,17 @@ public class IKController : MonoBehaviour
                     } else
                     {
                         oppositeTargetPosition = oppositeCirclePosition;
+                        oppositeCirclePosition.y = oppositeCurrentY;
                         leftFootOnBarrier = false;
                     }
                 } else {
                     oppositeTargetPosition = oppositeCirclePosition;
+                    oppositeCirclePosition.y = oppositeCurrentY;
                     leftFootOnBarrier = false;
                 }
             
         } else {
+            oppositeCirclePosition.y = oppositeCurrentY;
             oppositeTargetPosition = oppositeCirclePosition;
             leftFootOnBarrier = false;
         }
