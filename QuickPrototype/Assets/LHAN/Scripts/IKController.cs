@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class IKController : MonoBehaviour
@@ -62,6 +63,12 @@ public class IKController : MonoBehaviour
     private float intersectionPhase() {
         float barrierSize = barrierObject.transform.localScale.z;
         float circleSize = Radius * 2f;
+        float angle = Mathf.Atan2(barrierSize, circleSize);
+        float angleAtIntersection = MathF.PI - 2 * angle;
+        float phaseAtIntersection = angleAtIntersection / (2 * MathF.PI);
+        float res = 0.5f + phaseAtIntersection;
+        Debug.Log("Intersection phase: " + res);
+        return res;
     }
     private void OnAnimatorIK(int layerIndex)
     {
@@ -83,7 +90,7 @@ public class IKController : MonoBehaviour
         RaycastHit hit;
         circlePosition.y = 0;
         Vector3 targetPosition;
-        if (phase < 0.5f)
+        if (phase < intersectionPhase())
         {
             targetPosition = circlePosition;
         } else {
