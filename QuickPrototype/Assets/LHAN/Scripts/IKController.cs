@@ -22,6 +22,8 @@ public class IKController : MonoBehaviour
         phase = characterControllerCharacter.animationState;
         // Debug.Log("IK Phase: " + phase);
     }
+    Vector3? targetPositionRightFoot = null;
+    Vector3? targetPositionLeftFoot = null;
     void OnDrawGizmos()
     {
         
@@ -29,6 +31,16 @@ public class IKController : MonoBehaviour
         Vector3 center = IKCenter.transform.position;
         Vector3 normal = IKCenter.transform.right;
         DrawCircle(center, normal, Radius, phase);
+        if (targetPositionLeftFoot.HasValue)
+        {
+            Gizmos.color = Color.blue;
+            Gizmos.DrawSphere(targetPositionLeftFoot.Value, 0.05f);
+        }
+        if (targetPositionRightFoot.HasValue)
+        {
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawSphere(targetPositionRightFoot.Value, 0.05f);  
+        }
     }
     private void DrawCircle(Vector3 center, Vector3 normal, float radius, float phase)
     {
@@ -121,6 +133,8 @@ public class IKController : MonoBehaviour
         
         // Offset right foot 0.1f to the right
         Vector3 rightFootPosition = targetPosition + normal * 0.1f;
+        if (phase > 0 && phase < 0.5f) rightFootPosition.y = IKCenter.transform.position.y;
+        targetPositionRightFoot = rightFootPosition;
         
         // Debug.Log("OnAnimatorIK called. Target position: " + targetPosition);
         
@@ -161,7 +175,9 @@ public class IKController : MonoBehaviour
             leftFootOnBarrier = false;
         }
         Vector3 leftFootPosition = oppositeTargetPosition - normal * 0.1f;
-
+        if (phase > 0.5f && phase < 1f) leftFootPosition.y = IKCenter.transform.position.y;
+        
+        targetPositionLeftFoot = leftFootPosition;
         animator.SetIKPositionWeight(AvatarIKGoal.LeftFoot, 1f);
         animator.SetIKRotationWeight(AvatarIKGoal.LeftFoot, 1f);
         animator.SetIKPosition(AvatarIKGoal.LeftFoot, leftFootPosition);
