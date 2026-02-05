@@ -91,7 +91,7 @@ public class IKController : MonoBehaviour
         // Raycast downwards from circlePosition to find the gait barrier position
         RaycastHit hit;
         float currentY = circlePosition.y;
-        circlePosition.y = 0;
+        circlePosition.y = IKCenter.transform.position.y;
         Vector3 targetPosition;
         if (phase < intersectionPhase())
         {
@@ -132,7 +132,7 @@ public class IKController : MonoBehaviour
 
         Vector3 oppositeCirclePosition = center + (right * Mathf.Cos(phaseAngle + Mathf.PI) + forward * Mathf.Sin(phaseAngle + Mathf.PI)) * Radius;
         float oppositeCurrentY = oppositeCirclePosition.y;
-        oppositeCirclePosition.y = 0;
+        oppositeCirclePosition.y = IKCenter.transform.position.y;
         RaycastHit hitOpposite;
         Vector3 oppositeTargetPosition;
         if (phase > intersectionPhase() - 0.5f && phase < 0.5f)

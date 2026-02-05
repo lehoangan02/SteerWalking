@@ -624,7 +624,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &715615780
 Transform:
   m_ObjectHideFlags: 0
@@ -987,6 +987,7 @@ MonoBehaviour:
   downRayLowerDistance: 0.4
   downRayUpperDistance: 0.6
   rayDebugSphereRadius: 0.05
+  IsClimbingUp: 0
 --- !u!95 &914867583
 Animator:
   serializedVersion: 7
@@ -1264,7 +1265,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!65 &1252566057
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1836,7 +1837,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1950506626
 Transform:
   m_ObjectHideFlags: 0
@@ -2328,6 +2329,8 @@ MonoBehaviour:
   Radius: 0.3
   barrierObject: {fileID: 0}
   characterControllerCharacter: {fileID: 0}
+  rightFootOnBarrier: 0
+  leftFootOnBarrier: 0
 --- !u!4 &1031632035032946892
 Transform:
   m_ObjectHideFlags: 0
@@ -5056,6 +5059,8 @@ MonoBehaviour:
   Radius: 0.3
   barrierObject: {fileID: 432744842}
   characterControllerCharacter: {fileID: 5866666020582308733}
+  rightFootOnBarrier: 0
+  leftFootOnBarrier: 0
 --- !u!114 &5866666020582308733
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5087,6 +5092,7 @@ MonoBehaviour:
   downRayLowerDistance: 0.4
   downRayUpperDistance: 0.6
   rayDebugSphereRadius: 0.05
+  IsClimbingUp: 0
 --- !u!143 &5866666020582308734
 CharacterController:
   m_ObjectHideFlags: 0

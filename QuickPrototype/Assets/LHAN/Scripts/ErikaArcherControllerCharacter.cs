@@ -37,6 +37,7 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         movement += transform.forward * value;
         animationState += value * 0.005f;
         animationState = animationState % 1f;
+        if (animationState < 0f) animationState += 1f;
     }
     public void MoveRight(float value)
     {
