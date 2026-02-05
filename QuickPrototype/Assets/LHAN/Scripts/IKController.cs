@@ -67,9 +67,10 @@ public class IKController : MonoBehaviour
         float angleAtIntersection = MathF.PI - 2 * angle;
         float phaseAtIntersection = angleAtIntersection / (2 * MathF.PI);
         float res = 0.5f + phaseAtIntersection;
-        Debug.Log("Intersection phase: " + res);
+        // Debug.Log("Intersection phase: " + res);
         return res;
     }
+    public bool leftFootOnBarrier = false;
     private void OnAnimatorIK(int layerIndex)
     {
         if (IKCenter == null) return;
@@ -112,7 +113,7 @@ public class IKController : MonoBehaviour
         // Offset right foot 0.1f to the right
         Vector3 rightFootPosition = targetPosition + normal * 0.1f;
         
-        Debug.Log("OnAnimatorIK called. Target position: " + targetPosition);
+        // Debug.Log("OnAnimatorIK called. Target position: " + targetPosition);
         
         // Set position and rotation with full weight to override animation
         animator.SetIKPositionWeight(AvatarIKGoal.RightFoot, 1f);
@@ -120,7 +121,32 @@ public class IKController : MonoBehaviour
         animator.SetIKPosition(AvatarIKGoal.RightFoot, rightFootPosition);
         animator.SetIKRotation(AvatarIKGoal.RightFoot, IKCenter.transform.rotation);
 
-        Vector3 oppositeTargetPosition = center + (right * Mathf.Cos(phaseAngle + Mathf.PI) + forward * Mathf.Sin(phaseAngle + Mathf.PI)) * Radius;
+        Vector3 oppositeCirclePosition = center + (right * Mathf.Cos(phaseAngle + Mathf.PI) + forward * Mathf.Sin(phaseAngle + Mathf.PI)) * Radius;
+        oppositeCirclePosition.y = 0;
+        RaycastHit hitOpposite;
+        Vector3 oppositeTargetPosition;
+        if (phase > intersectionPhase() - 0.5f && phase < 0.5f)
+        {
+            if (Physics.Raycast(oppositeCirclePosition, Vector3.up, out hitOpposite, 1f))
+                {
+                    if (hitOpposite.collider.gameObject == barrierObject)
+                    {
+                        oppositeTargetPosition = hitOpposite.point;
+                        leftFootOnBarrier = true;
+                    } else
+                    {
+                        oppositeTargetPosition = oppositeCirclePosition;
+                        leftFootOnBarrier = false;
+                    }
+                } else {
+                    oppositeTargetPosition = oppositeCirclePosition;
+                    leftFootOnBarrier = false;
+                }
+            
+        } else {
+            oppositeTargetPosition = oppositeCirclePosition;
+            leftFootOnBarrier = false;
+        }
         Vector3 leftFootPosition = oppositeTargetPosition - normal * 0.1f;
 
         animator.SetIKPositionWeight(AvatarIKGoal.LeftFoot, 1f);
