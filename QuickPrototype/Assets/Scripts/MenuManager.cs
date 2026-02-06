@@ -1,50 +1,62 @@
 using UnityEngine;
 using Unity.XR.CoreUtils;
-using UnityEngine.XR.Interaction.Toolkit;
 
 public class MenuManager : MonoBehaviour
 {
     [Header("References")]
     public StairGenerator stairGenerator;
-    public XROrigin xrOrigin;
+    
+    [Tooltip("Assign the top-level 'XR Origin (VR)' object here to move the whole player.")]
+    public Transform playerTransform; 
 
     private Vector3 startPosition;
     private Quaternion startRotation;
 
     void Start()
     {
-        if (xrOrigin != null)
+        // Record the position of the whole player at the start of the game
+        if (playerTransform != null)
         {
-            startPosition = xrOrigin.transform.position;
-            startRotation = xrOrigin.transform.rotation;
+            startPosition = playerTransform.position;
+            startRotation = playerTransform.rotation;
         }
     }
 
     public void ResetUserPosition()
     {
-        if (xrOrigin != null)
-            xrOrigin.transform.SetPositionAndRotation(startPosition, startRotation);
+        if (playerTransform != null)
+        {
+            // This moves the entire rig, including the camera and controllers
+            playerTransform.SetPositionAndRotation(startPosition, startRotation);
+            Debug.Log("Player position reset to start.");
+        }
     }
 
     public void SetNoStairs()
     {
-        // To "clear" them, we tell the generator to make 0 steps
-        // This triggers the cleanup logic inside GenerateStairs()
-        int originalCount = stairGenerator.stepCount;
-        stairGenerator.stepCount = 0;
-        stairGenerator.GenerateStairs();
-        stairGenerator.stepCount = originalCount; // Reset value for next time
+        if (stairGenerator != null)
+        {
+            // Faster testing: toggles the visibility of the stairs
+            bool currentState = stairGenerator.gameObject.activeSelf;
+            stairGenerator.gameObject.SetActive(!currentState);
+        }
     }
 
     public void SetStairsUp()
     {
+        stairGenerator.gameObject.SetActive(true);
         stairGenerator.generateMode = StairGenerator.GenerateMode.UpOnly;
         stairGenerator.GenerateStairs();
     }
 
     public void SetStairsDown()
     {
+        stairGenerator.gameObject.SetActive(true);
         stairGenerator.generateMode = StairGenerator.GenerateMode.DownOnly;
         stairGenerator.GenerateStairs();
     }
+    public void CloseMenu()
+{
+    this.gameObject.SetActive(false);
+}
 }

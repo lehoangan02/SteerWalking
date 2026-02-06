@@ -7,6 +7,24 @@ class OpenVRTrackerSource(TrackerSource):
         openvr.init(openvr.VRApplication_Other)
         self.vr = openvr.VRSystem()
         self.rudder_manager = RudderManager()
+        self._log_tracker_indices()
+
+    def _log_tracker_indices(self):
+        self.tracker1index = -1
+        found = False
+        for i in range(openvr.k_unMaxTrackedDeviceCount):
+            if (
+                self.vr.isTrackedDeviceConnected(i)
+                and self.vr.getTrackedDeviceClass(i) == openvr.TrackedDeviceClass_GenericTracker
+            ):
+                print("[OpenVRTrackerSource] Tracker index:", i)
+                if (self.tracker1index == -1):
+                    self.tracker1index = i
+                else: 
+                    self.tracker2index = i
+                found = True
+        if not found:
+            print("[OpenVRTrackerSource] No trackers detected")
 
     def shutdown(self):
         openvr.shutdown()
@@ -17,7 +35,7 @@ class OpenVRTrackerSource(TrackerSource):
             0,
             openvr.k_unMaxTrackedDeviceCount
         )
-        i = 1
+        i = self.tracker1index
         if (
             self.vr.isTrackedDeviceConnected(i)
             and self.vr.getTrackedDeviceClass(i) == openvr.TrackedDeviceClass_GenericTracker

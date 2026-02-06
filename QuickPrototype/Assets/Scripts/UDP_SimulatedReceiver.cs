@@ -141,7 +141,7 @@ public class UDP_SimulatedReceiver : MonoBehaviour
         lock (dataLock) 
         {
             // Just return the raw angle (No Prediction)
-            return latestSimData != null ? -latestSimData.angle_deg : 0f; 
+            return latestSimData != null ? latestSimData.angle_deg : 0f; 
         }
     }
 

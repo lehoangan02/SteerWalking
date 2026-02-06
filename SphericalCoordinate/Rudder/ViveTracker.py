@@ -24,7 +24,7 @@ class ViveTracker:
             return (0.0, 0.0, 0.0)
 
         if self.vr.getTrackedDeviceClass(i) != openvr.TrackedDeviceClass_GenericTracker:
-            print("[ViveTracker] Error: Device at index 1 is not a tracker")
+            print("[ViveTracker] Error: Device at index 4 is not a tracker")
             return (0.0, 0.0, 0.0)
 
         if poses[i].bPoseIsValid:
