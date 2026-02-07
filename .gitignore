@@ -176,3 +176,5 @@ htmlcov/
 .noseresults
 .pytest_cache/
 /myenv
+/QuickPrototype/Apk
+/QuickPrototype/Build_BackUpThisFolder_ButDontShipItWithYourGame

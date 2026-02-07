@@ -5,13 +5,14 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 using TMPro;
+using NUnit.Framework;
 
 [Serializable]
 public class PythonSimPayload
 {
     public float angle_deg;
     public float angular_velocity;
-    public float rudder_deg; 
+    public float rudder_deg;
     public double ts;
 }
 
@@ -24,7 +25,7 @@ public class UDP_SimulatedReceiver : MonoBehaviour
     [SerializeField] private int port = 9000;
 
     [Header("Simulation Settings")]
-    [SerializeField] private float radius = 0.3f; 
+    [SerializeField] private float radius = 0.3f;
     [SerializeField] private float height = 0.1f;
 
     [Header("UI Debug")]
@@ -34,18 +35,18 @@ public class UDP_SimulatedReceiver : MonoBehaviour
     private Thread thread;
     private bool running;
     private readonly object dataLock = new object();
-    
+
     // Data containers
-    private PythonSimPayload latestSimData; 
+    private PythonSimPayload latestSimData;
     private TrackerPayload latestTrackerPayload;
 
     void Start()
     {
         if (playerTransform == null) playerTransform = transform;
-        
+
         // Init with empty data to avoid null errors
         latestTrackerPayload = new TrackerPayload { trackers = new TrackerData[0] };
-        latestSimData = new PythonSimPayload(); 
+        latestSimData = new PythonSimPayload();
 
         try
         {
@@ -63,7 +64,7 @@ public class UDP_SimulatedReceiver : MonoBehaviour
         // Update the UI text every frame with the latest data
         lock (dataLock)
         {
-            if (latestSimData != null) 
+            if (latestSimData != null)
             {
                 DisplayPayload(latestSimData);
             }
@@ -76,7 +77,7 @@ public class UDP_SimulatedReceiver : MonoBehaviour
         udpClient?.Close();
         thread?.Join(200);
     }
-
+    public bool isReceiving = false;
     void ReceiveLoop()
     {
         IPEndPoint ep = new IPEndPoint(IPAddress.Any, port);
@@ -90,17 +91,22 @@ public class UDP_SimulatedReceiver : MonoBehaviour
 
                 if (simData != null)
                 {
+                    isReceiving = true;
                     // --- STRICTION LOGIC ---
                     // Force -180...180 into 0...360
                     simData.angle_deg = (simData.angle_deg % 360f + 360f) % 360f;
 
                     TrackerPayload converted = ConvertSimToTracker(simData);
-                    
+
                     lock (dataLock)
                     {
                         latestSimData = simData;
                         latestTrackerPayload = converted;
                     }
+                }
+                else
+                {
+                    isReceiving = false;
                 }
             }
             catch { }
@@ -120,28 +126,28 @@ public class UDP_SimulatedReceiver : MonoBehaviour
         t.valid = true;
         t.position = new float[3] { localPos.x, localPos.y, localPos.z };
         t.rotation = new float[4] { 0, 0, 0, 1 };
-        
+
         payload.trackers = new TrackerData[] { t };
         return payload;
     }
 
     #region GETTERS
-    public TrackerPayload GetLatestPayload() 
-    { 
-        lock (dataLock) return latestTrackerPayload; 
-    }
-    
-    public float GetRudderAngle() 
-    { 
-        lock (dataLock) return latestSimData != null ? latestSimData.rudder_deg : 0f; 
+    public TrackerPayload GetLatestPayload()
+    {
+        lock (dataLock) return latestTrackerPayload;
     }
 
-    public float GetWalkingCycleAngle() 
-    { 
-        lock (dataLock) 
+    public float GetRudderAngle()
+    {
+        lock (dataLock) return latestSimData != null ? latestSimData.rudder_deg : 0f;
+    }
+
+    public float GetWalkingCycleAngle()
+    {
+        lock (dataLock)
         {
             // Just return the raw angle (No Prediction)
-            return latestSimData != null ? latestSimData.angle_deg : 0f; 
+            return latestSimData != null ? latestSimData.angle_deg : 0f;
         }
     }
 
@@ -162,7 +168,7 @@ public class UDP_SimulatedReceiver : MonoBehaviour
     // --- DISPLAY FUNCTION ---
     void DisplayPayload(PythonSimPayload sim)
     {
-        if (statusText) 
+        if (statusText)
         {
             statusText.text = $"Data Received:\n" +
                               $"Rudder: {sim.rudder_deg:F1}°\n" +

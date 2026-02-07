@@ -21,7 +21,7 @@ def label_at_point(ax, text_obj, p, dx=6, dy=6):
     text_obj.set_position((x_final, y_final))
 
 class Cycle3DSimulator:
-    def __init__(self, udp_ip: str = "127.0.0.1", udp_port: int = 9000):
+    def __init__(self, udp_ip: str = "10.0.10.49", udp_port: int = 9000):
         self.UDP_IP = udp_ip
         self.UDP_PORT = udp_port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -210,7 +210,7 @@ class Cycle3DSimulator:
 
 def main():
     parser = argparse.ArgumentParser(description="Cycle 3D simulator (UDP angle/rudder sender)")
-    parser.add_argument("--ip", default="127.0.0.1", help="Destination IP for UDP messages")
+    parser.add_argument("--ip", default="10.0.10.49", help="Destination IP for UDP messages")
     parser.add_argument("--port", type=int, default=9000, help="Destination UDP port (default 9000)")
     args = parser.parse_args()
 
