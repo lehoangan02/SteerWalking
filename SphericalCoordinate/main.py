@@ -13,6 +13,7 @@ def main():
     
     LAN_IP = "255.255.255.255"
     LOCALHOST_IP = "127.0.0.1"
+
     SEND_HZ = 10.0
     
     udp = TrackerUdpBroadcaster(ip=LOCALHOST_IP, port=9000)
