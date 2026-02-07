@@ -34,7 +34,7 @@ if __name__ == "__main__":
     try:
         while True:
             angle = read_angle()
-            sent_value = angle / 10.0
+            sent_value = angle
             send_angle_data(sent_value)
             print(f"Sent: angle_deg={sent_value:.2f}°")
             time.sleep(0.1)
