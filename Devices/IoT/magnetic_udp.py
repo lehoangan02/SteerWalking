@@ -14,7 +14,7 @@ def read_angle():
     high = bus.read_byte_data(AS5600_ADDR, 0x0E)
     low = bus.read_byte_data(AS5600_ADDR, 0x0F)
     raw = (high << 8) | low
-    return raw * 360.0 / 4096.0 / 5
+    return raw * 360.0 / 4096.0
 
 def send_angle_data(angle_deg):
     """Send angle data via UDP broadcast to all devices."""
@@ -34,8 +34,9 @@ if __name__ == "__main__":
     try:
         while True:
             angle = read_angle()
-            send_angle_data(angle)
-            print(f"Sent: angle_deg={angle:.2f}°")
+            sent_value = angle / 10.0
+            send_angle_data(sent_value)
+            print(f"Sent: angle_deg={sent_value:.2f}°")
             time.sleep(0.1)
     except KeyboardInterrupt:
         print("\nShutdown")
