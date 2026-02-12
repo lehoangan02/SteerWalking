@@ -90,6 +90,7 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         float forwardSpeed = animator.GetFloat("forwardSpeed");
         return forwardSpeed > 0.2f;
     }
+    public float stepHeight = 0f;
     private void ClimbStairs()
     {
         if (!IsMovingForward()) return;
@@ -100,6 +101,17 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
             Debug.Log("Hit Lower Step: " + hitLower.collider.name);
             if (!Physics.Raycast(UpStairStepRayUpper.transform.position, transform.forward, upRayUpperDistance))
             {
+                Vector3 rayOrigin = UpStairStepRayLower.transform.position + (transform.forward * (hitLower.distance + 0.1f));
+                rayOrigin.y = UpStairStepRayUpper.transform.position.y;
+                RaycastHit hitSurface;
+
+                if (Physics.Raycast(rayOrigin, Vector3.down, out hitSurface, 1.0f))
+                {
+                    stepHeight = hitSurface.point.y - transform.position.y;
+                    
+                    Debug.Log($"Stair Detected! Height: {stepHeight:F2}m");
+                }
+
                 Debug.Log("Not Hit Upper Step, Up Stair Detected");
                 TimeSinceLastClimbUp = 0f;
                 IsClimbingUp = true;
