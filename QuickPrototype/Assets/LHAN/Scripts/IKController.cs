@@ -133,6 +133,7 @@ public class IKController : MonoBehaviour
         
         // Offset right foot 0.1f to the right
         Vector3 rightFootPosition = targetPosition + normal * 0.1f;
+        if (phase < 0f || phase > 0.5f && characterControllerCharacter.IsClimbingUp) rightFootPosition.y = IKCenter.transform.position.y + characterControllerCharacter.stepHeight;
         if (phase > 0 && phase < 0.5f) rightFootPosition.y = IKCenter.transform.position.y;
         targetPositionRightFoot = rightFootPosition;
         

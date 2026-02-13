@@ -85,8 +85,8 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     [SerializeField] private GameObject DownStairStepRayUpper;
     [SerializeField] private GameObject DownStairStepRayLower;
     [SerializeField] private GameObject DebugSphere;
-    [SerializeField] private float upRayLowerDistance = 0.4f;
-    [SerializeField] private float upRayUpperDistance = 0.6f;
+    [SerializeField] private float upRayLowerDistance = 2.0f;
+    [SerializeField] private float upRayUpperDistance = 1.2f;
     [SerializeField] private float downRayLowerDistance = 0.4f;
     [SerializeField] private float downRayUpperDistance = 0.6f;
     [SerializeField] private float rayDebugSphereRadius = 0.05f;
@@ -98,18 +98,19 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     
     [Header("Step Height Detection")]
     public float stepHeight = 0f;
-    [SerializeField]
-    private bool isCharacterControllerSlidingUp = false;
+    public bool isCharacterControllerSlidingUp = false;
     [SerializeField]
     private float lastFrameYPosition;
     [SerializeField] private float stepUpThreshold = 0.01f;
     private void ClimbStairs()
     {
-        if (!IsMovingForward()) return;
+        // if (!IsMovingForward()) return;
         RaycastHit hitLower;
         if (Physics.Raycast(UpStairStepRayLower.transform.position, transform.forward, out hitLower, upRayLowerDistance)
         && hitLower.collider.name != "GaitBarrier")
         {
+            Debug.Log("Distance to hit point: " + hitLower.distance);
+            upRayUpperDistance = upRayLowerDistance + hitLower.distance + 0.2f;
             Debug.Log("Hit Lower Step: " + hitLower.collider.name);
             if (!Physics.Raycast(UpStairStepRayUpper.transform.position, transform.forward, upRayUpperDistance))
             {
