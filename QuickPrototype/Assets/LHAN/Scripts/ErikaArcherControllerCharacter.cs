@@ -26,6 +26,7 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         {
             Debug.LogError("CharacterController component not found on " + gameObject.name);
         }
+        Cursor.lockState = CursorLockMode.Locked;
     }
     void Update()
     {
@@ -37,6 +38,8 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         ApplyGravity();
 
         lastFrameYPosition = transform.position.y;
+
+        LookAround();
     }
     public void MoveForward(float value)
     {
@@ -223,4 +226,21 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         Gizmos.DrawLine(origin, origin + direction.normalized * length);
     }
     
+    [Header("Mouse Look")]
+    public Transform playerCamera; 
+    public float mouseSensitivity = 0.5f;
+    private float xRotation = 0f;
+    void LookAround()
+    {
+        // Read mouse input
+        Vector2 mouseDelta = Mouse.current.delta.ReadValue();
+
+        // Look Left/Right (Rotates the whole character)
+        transform.Rotate(Vector3.up * mouseDelta.x * mouseSensitivity);
+
+        // Look Up/Down (Rotates ONLY the camera)
+        xRotation -= mouseDelta.y * mouseSensitivity;
+        xRotation = Mathf.Clamp(xRotation, -80f, 80f); // Prevents neck-breaking
+        playerCamera.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+    }
 }

@@ -176,6 +176,7 @@ public class IKController : MonoBehaviour
             leftFootOnBarrier = false;
         }
         Vector3 leftFootPosition = oppositeTargetPosition - normal * 0.1f;
+        if (phase > 0f && phase < 0.5f && characterControllerCharacter.IsClimbingUp) leftFootPosition.y = IKCenter.transform.position.y + characterControllerCharacter.stepHeight;
         if (phase > 0.5f && phase < 1f) leftFootPosition.y = IKCenter.transform.position.y;
         
         targetPositionLeftFoot = leftFootPosition;
