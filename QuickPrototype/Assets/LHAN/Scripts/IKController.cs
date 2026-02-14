@@ -84,6 +84,17 @@ public class IKController : MonoBehaviour
     }
     public bool rightFootOnBarrier = false;
     public bool leftFootOnBarrier = false;
+
+    [Header("IK Smoothing")]
+    [SerializeField] private float footSmoothSpeed = 15f; 
+
+    private Vector3 currentRightFootPos;
+    private Quaternion currentRightFootRot;
+    private bool isIKInitialized = false;
+
+    private Vector3 currentLeftFootPos;
+    private Quaternion currentLeftFootRot;
+    private bool isLeftIKInitialized = false;
     private void OnAnimatorIK(int layerIndex)
     {
         if (IKCenter == null) return;
@@ -135,15 +146,27 @@ public class IKController : MonoBehaviour
         Vector3 rightFootPosition = targetPosition + normal * 0.1f;
         if (phase < 0f || phase > 0.5f && characterControllerCharacter.IsClimbingUp) rightFootPosition.y = IKCenter.transform.position.y + characterControllerCharacter.stepHeight;
         if (phase > 0 && phase < 0.5f) rightFootPosition.y = IKCenter.transform.position.y;
+        
         targetPositionRightFoot = rightFootPosition;
         
-        // Debug.Log("OnAnimatorIK called. Target position: " + targetPosition);
-        
-        // Set position and rotation with full weight to override animation
+        // 1. Initialize right foot on the first frame
+        if (!isIKInitialized)
+        {
+            currentRightFootPos = rightFootPosition;
+            currentRightFootRot = IKCenter.transform.rotation;
+            isIKInitialized = true;
+        }
+
+        // 2. Interpolate
+        currentRightFootPos = Vector3.Lerp(currentRightFootPos, rightFootPosition, Time.deltaTime * footSmoothSpeed);
+        currentRightFootRot = Quaternion.Slerp(currentRightFootRot, IKCenter.transform.rotation, Time.deltaTime * footSmoothSpeed);
+
+        // 3. Apply smoothed variables
         animator.SetIKPositionWeight(AvatarIKGoal.RightFoot, 1f);
         animator.SetIKRotationWeight(AvatarIKGoal.RightFoot, 1f);
-        animator.SetIKPosition(AvatarIKGoal.RightFoot, rightFootPosition);
-        animator.SetIKRotation(AvatarIKGoal.RightFoot, IKCenter.transform.rotation);
+        animator.SetIKPosition(AvatarIKGoal.RightFoot, currentRightFootPos);
+        animator.SetIKRotation(AvatarIKGoal.RightFoot, currentRightFootRot);
+
 
         Vector3 oppositeCirclePosition = center + (right * Mathf.Cos(phaseAngle + Mathf.PI) + forward * Mathf.Sin(phaseAngle + Mathf.PI)) * Radius;
         float oppositeCurrentY = oppositeCirclePosition.y;
@@ -179,10 +202,25 @@ public class IKController : MonoBehaviour
         if (phase > 0f && phase < 0.5f && characterControllerCharacter.IsClimbingUp) leftFootPosition.y = IKCenter.transform.position.y + characterControllerCharacter.stepHeight;
         if (phase > 0.5f && phase < 1f) leftFootPosition.y = IKCenter.transform.position.y;
         
+        
         targetPositionLeftFoot = leftFootPosition;
+    
+        // 1. Initialize left foot on the first frame
+        if (!isLeftIKInitialized)
+        {
+            currentLeftFootPos = leftFootPosition;
+            currentLeftFootRot = IKCenter.transform.rotation;
+            isLeftIKInitialized = true;
+        }
+
+        // 2. Interpolate
+        currentLeftFootPos = Vector3.Lerp(currentLeftFootPos, leftFootPosition, Time.deltaTime * footSmoothSpeed);
+        currentLeftFootRot = Quaternion.Slerp(currentLeftFootRot, IKCenter.transform.rotation, Time.deltaTime * footSmoothSpeed);
+
+        // 3. Apply smoothed variables
         animator.SetIKPositionWeight(AvatarIKGoal.LeftFoot, 1f);
         animator.SetIKRotationWeight(AvatarIKGoal.LeftFoot, 1f);
-        animator.SetIKPosition(AvatarIKGoal.LeftFoot, leftFootPosition);
-        animator.SetIKRotation(AvatarIKGoal.LeftFoot, IKCenter.transform.rotation);
+        animator.SetIKPosition(AvatarIKGoal.LeftFoot, currentLeftFootPos);
+        animator.SetIKRotation(AvatarIKGoal.LeftFoot, currentLeftFootRot);
     }
 }
