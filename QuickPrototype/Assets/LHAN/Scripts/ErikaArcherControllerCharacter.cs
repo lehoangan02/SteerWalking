@@ -34,8 +34,39 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
         isCharacterControllerSlidingUp = deltaY > stepUpThreshold;
 
         HandleStair();
-        HandleMovementRequest();
-        ApplyGravity();
+        
+        // --- UNIFIED MOVEMENT & GRAVITY ---
+        
+        // 1. Calculate Gravity
+        if (characterController.isGrounded && verticalVelocity < 0)
+        {
+            verticalVelocity = gravity; // small negative value to stick to ground
+        }
+        verticalVelocity += Physics.gravity.y * Time.deltaTime;
+
+        // 2. Combine Horizontal and Vertical Vectors
+        const float speedRatio = 1f;
+        Vector3 finalMove = movement * speedRatio; // Add Horizontal
+        finalMove.y = verticalVelocity;            // Add Vertical
+
+        // 3. SINGLE Move Call (This fixes the directional stair bug!)
+        characterController.Move(finalMove * Time.deltaTime);
+
+        // 4. Update Animations based on horizontal movement
+        float forwardSpeed = Vector3.Dot(movement * speedRatio, transform.forward);
+        animator.SetFloat("forwardSpeed", forwardSpeed);
+        animator.SetFloat("SPEED", forwardSpeed);
+        
+        if (IsClimbingUp) {
+            animator.Play("ClimbStair", 0, animationState);
+        } else {
+            animator.Play("Blend Tree", 0, animationState);
+        }
+
+        // 5. Reset movement input for the next frame
+        movement = Vector3.zero; 
+        
+        // ----------------------------------
 
         lastFrameYPosition = transform.position.y;
 
