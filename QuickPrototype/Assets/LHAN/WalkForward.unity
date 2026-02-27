@@ -1742,7 +1742,7 @@ MonoBehaviour:
   speedDeadzone: 5
   speedScale: 0.0027777778
   rudderDeadzone: 2
-  rudderToRotateScale: 0.0055555557
+  rudderDegreesPerSecondPerInput: 0.3
   erikaArcherController: {fileID: 5866666020582308733}
   walkSpeedReceiver: {fileID: 1371274627}
 --- !u!4 &1494094493
@@ -2292,7 +2292,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 919132148339063739}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.0074974573, y: 0.0140978275, z: -0.00010569586, w: 0.9998725}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0.011582584, y: 0.3531747, z: -11.01}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
