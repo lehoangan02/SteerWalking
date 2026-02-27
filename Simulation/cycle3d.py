@@ -21,7 +21,7 @@ def label_at_point(ax, text_obj, p, dx=6, dy=6):
     text_obj.set_position((x_final, y_final))
 
 class Cycle3DSimulator:
-    def __init__(self, udp_ip: str = "10.0.10.49", udp_port: int = 9000):
+    def __init__(self, udp_ip: str = "127.0.0.1", udp_port: int = 9000):
         self.UDP_IP = udp_ip
         self.UDP_PORT = udp_port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -220,3 +220,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # example usage: python cycle3d.py --ip 127.0.0.1 --port 9000

@@ -89,6 +89,10 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     {
         transform.Rotate(Vector3.up * angle * 180f * Time.deltaTime);
     }
+    public void RotateRaw(float angle)
+    {
+        transform.Rotate(Vector3.up * angle);
+    }
     public float animationState = 0f;
     private void HandleMovementRequest()
     {
@@ -258,11 +262,13 @@ public class ErikaArcherControllerCharacter : MonoBehaviour
     }
     
     [Header("Mouse Look")]
+    public bool enableMouseLook = true;
     public Transform playerCamera; 
     public float mouseSensitivity = 0.5f;
     private float xRotation = 0f;
     void LookAround()
     {
+        if (!enableMouseLook) return;
         // Read mouse input
         Vector2 mouseDelta = Mouse.current.delta.ReadValue();
 
